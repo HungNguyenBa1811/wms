@@ -27,6 +27,6 @@ public class PurchaseOrderEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "purchase_order")
+    @OneToMany(mappedBy = "purchaseOrder")
     private List<PurchaseOrderItemEntity> purchaseOrderItems = new ArrayList<>();
 }

@@ -29,6 +29,6 @@ public class UserEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "performed_by", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "performedBy", fetch = FetchType.LAZY)
     private List<StockMovementEntity> stockMovements = new ArrayList<>();
 }

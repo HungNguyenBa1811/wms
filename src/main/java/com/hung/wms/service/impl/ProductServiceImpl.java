@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class ProductServiceImpl implements ProductService {
     @Autowired
@@ -31,5 +34,30 @@ public class ProductServiceImpl implements ProductService {
         ProductEntity productEntity = productConverter.toEntity(product);
         productEntity.setId(id);
         return productConverter.toResponse(productRepository.updateProduct(productEntity));
+    }
+
+    @Override
+    public List<ProductResponse> findAllProducts() {
+        List<ProductEntity> productEntityList = productRepository.findAll();
+        List<ProductResponse> productResponseList = new ArrayList<>();
+        for (ProductEntity items : productEntityList) {
+            productResponseList.add(productConverter.toResponse(items));
+        }
+        return productResponseList;
+    }
+
+    @Override
+    public ProductResponse findProductById(String id) {
+        ProductEntity productEntity = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Not found"));
+        return productConverter.toResponse(productEntity);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProductById(String id) {
+        if (!productRepository.existsById(id)) {
+            throw new RuntimeException("Product not found with id: " + id);
+        }
+        productRepository.deleteById(id);
     }
 }
