@@ -14,7 +14,7 @@ public class ModelMapperConfig {
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
         // categoryId is resolved to a managed CategoryEntity in the service, not by the mapper
         modelMapper.typeMap(ProductRequest.class, ProductEntity.class)
                 .addMappings(m -> m.skip(ProductEntity::setCategory));

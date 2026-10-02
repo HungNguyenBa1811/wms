@@ -8,7 +8,12 @@ spring:
   profiles:
     active: uat
 
+  sql:
+    init:
+      mode: always
+
   jpa:
+    defer-datasource-initialization: true
     properties:
       hibernate:
         enable_lazy_load_no_trans: true
