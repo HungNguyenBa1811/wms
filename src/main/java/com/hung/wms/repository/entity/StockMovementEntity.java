@@ -1,9 +1,15 @@
 package com.hung.wms.repository.entity;
 
+import com.hung.wms.enums.MovementType;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(
         name = "stock_movements",
@@ -29,8 +35,9 @@ public class StockMovementEntity {
     @JoinColumn(name = "performed_by", nullable = false)
     private UserEntity performedBy;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "movement_type", nullable = false)
-    private String movementType;
+    private MovementType movementType;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
@@ -38,6 +45,7 @@ public class StockMovementEntity {
     @Column(name = "reason", nullable = false)
     private String reason;
 
-    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 }

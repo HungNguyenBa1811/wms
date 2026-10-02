@@ -10,7 +10,11 @@
     { "key": "categoryId2", "value": "22222222-2222-2222-2222-222222222222" },
     { "key": "seededProductId", "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" },
     { "key": "seededProductCode", "value": "SEED-001" },
-    { "key": "productId", "value": "" }
+    { "key": "productId", "value": "" },
+    { "key": "warehouseId", "value": "c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1" },
+    { "key": "supplierId", "value": "d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1" },
+    { "key": "userId", "value": "e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1" },
+    { "key": "purchaseOrderId", "value": "" }
   ],
   "item": [
     {
@@ -148,7 +152,7 @@
           "listen": "test",
           "script": {
             "type": "text/javascript",
-            "exec": ["pm.test('status is 200', () => pm.response.to.have.status(200));"]
+            "exec": ["pm.test('status is 204', () => pm.response.to.have.status(204));"]
           }
         }
       ],
@@ -219,6 +223,144 @@
             "url": "{{baseUrl}}/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
             "body": { "mode": "raw", "raw": "{\n  \"productCode\": \"{{seededProductCode}}\"\n}" }
           }
+        }
+      ]
+    },
+    {
+      "name": "Purchase order flow",
+      "description": "Run in order. Create saves `purchaseOrderId`. Receive should add stock to inventory and create IN stock movements.",
+      "item": [
+        {
+          "name": "Create purchase order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('is pending with 1 item', () => {",
+                  "  pm.expect(body.status).to.eql('PENDING');",
+                  "  pm.expect(body.items).to.have.length(1);",
+                  "});",
+                  "pm.collectionVariables.set('purchaseOrderId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/purchase-orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierId\": \"{{supplierId}}\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"items\": [\n    { \"productId\": \"{{seededProductId}}\", \"quantity\": 100, \"unitCost\": 12.00 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Add item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has 2 items', () => pm.expect(pm.response.json().items).to.have.length(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\n  \"quantity\": 5,\n  \"unitCost\": 90.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Get all purchase orders",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/purchase-orders" }
+        },
+        {
+          "name": "Get purchase order by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}" }
+        },
+        {
+          "name": "Receive purchase order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is received', () => pm.expect(pm.response.json().status).to.eql('RECEIVED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive",
+            "body": { "mode": "raw", "raw": "{\n  \"receivedBy\": \"{{userId}}\"\n}" }
+          }
+        },
+        {
+          "name": "Receive again (should fail once status check is implemented)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive",
+            "body": { "mode": "raw", "raw": "{\n  \"receivedBy\": \"{{userId}}\"\n}" }
+          }
+        },
+        {
+          "name": "Get inventory by warehouse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('seeded mouse has stock', () => {",
+                  "  const row = pm.response.json().find(i => i.productId === pm.collectionVariables.get('seededProductId'));",
+                  "  pm.expect(row.quantity).to.be.at.least(100);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/inventory?warehouseId={{warehouseId}}" }
+        },
+        {
+          "name": "Get inventory by product",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/inventory?productId={{seededProductId}}" }
+        },
+        {
+          "name": "Get stock movements",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has IN movements', () => {",
+                  "  pm.expect(pm.response.json().some(m => m.movementType === 'IN')).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stock-movements?warehouseId={{warehouseId}}" }
         }
       ]
     }

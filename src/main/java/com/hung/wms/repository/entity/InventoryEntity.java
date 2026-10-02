@@ -1,11 +1,21 @@
 package com.hung.wms.repository.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
-@Table(name = "inventory")
+@Table(
+        name = "inventory",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_inventory_warehouse_product", columnNames = {"warehouse_id", "product_id"})
+        }
+)
 public class InventoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -22,6 +32,7 @@ public class InventoryEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updated_at;
+    private LocalDateTime updatedAt;
 }

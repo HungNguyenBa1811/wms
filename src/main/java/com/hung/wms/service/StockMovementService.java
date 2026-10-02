@@ -1,8 +1,10 @@
 package com.hung.wms.service;
 
-import org.springframework.stereotype.Service;
+import com.hung.wms.model.response.stockmovement.StockMovementResponse;
 
-@Service
+import java.util.List;
+
 public interface StockMovementService {
-    
+    List<StockMovementResponse> findAllStockMovements(String warehouseId, String productId);
+    StockMovementResponse findStockMovementById(String id);
 }

@@ -13,6 +13,11 @@ INSERT INTO products (id, product_code, name, description, price, category_id, c
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'SEED-002', 'Office Chair', 'Seeded product', 120.00,
      '22222222-2222-2222-2222-222222222222', NOW());
 
+-- Placeholder user until auth exists; used as receivedBy when receiving a purchase order.
+-- Password is not hashed yet.
+INSERT INTO users (id, username, email, password, role, created_at) VALUES
+    ('e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1', 'admin', 'admin@example.com', 'admin', 'ADMIN', NOW());
+
 INSERT INTO warehouses (id, warehouse_code, name, location, created_at) VALUES
     ('c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1', 'WH-001', 'Main Warehouse', 'Ho Chi Minh City', NOW()),
     ('c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2', 'WH-002', 'North Warehouse', 'Ha Noi', NOW());
