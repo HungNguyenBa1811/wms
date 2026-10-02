@@ -14,4 +14,6 @@ public interface WarehouseRepository extends JpaRepository<WarehouseEntity, Stri
     void deleteById(String id);
     boolean existsById(String id);
     boolean existsByWarehouseCode(String warehouseCode);
+    List<WarehouseEntity> findAllByIsDeletedFalse();
+    Optional<WarehouseEntity> findByIdAndIsDeletedFalse(String id);
 }

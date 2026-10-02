@@ -13,4 +13,6 @@ public interface SupplierRepository extends JpaRepository<SupplierEntity, String
     Optional<SupplierEntity> findById(String id);
     void deleteById(String id);
     boolean existsById(String id);
+    List<SupplierEntity> findAllByIsDeletedFalse();
+    Optional<SupplierEntity> findByIdAndIsDeletedFalse(String id);
 }

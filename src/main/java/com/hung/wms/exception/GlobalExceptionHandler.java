@@ -28,6 +28,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ResourceInUseException.class)
+    public ResponseEntity<Object> handleResourceInUseException(
+            ResourceInUseException ex,
+            WebRequest request
+    ) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(InvalidStateException.class)
     public ResponseEntity<Object> handleInvalidStateException(
             InvalidStateException ex,

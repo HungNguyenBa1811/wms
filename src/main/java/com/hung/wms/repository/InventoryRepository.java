@@ -18,6 +18,8 @@ public interface InventoryRepository extends JpaRepository<InventoryEntity, Stri
     List<InventoryEntity> findByWarehouse_Id(String warehouseId);
     List<InventoryEntity> findByProduct_Id(String productId);
     List<InventoryEntity> findByWarehouse_IdAndProduct_Id(String warehouseId, String productId);
+    boolean existsByProduct_IdAndQuantityGreaterThan(String productId, Integer quantity);
+    boolean existsByWarehouse_IdAndQuantityGreaterThan(String warehouseId, Integer quantity);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM InventoryEntity i WHERE i.warehouse.id = :warehouseId AND i.product.id = :productId")

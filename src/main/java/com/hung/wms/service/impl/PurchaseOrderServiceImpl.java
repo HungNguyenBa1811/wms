@@ -63,10 +63,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         PurchaseOrderEntity purchaseOrder = purchaseOrderConverter.toEntity(request);
         SupplierEntity supplier = supplierRepository
-                .findById(request.getSupplierId())
+                .findByIdAndIsDeletedFalse(request.getSupplierId())
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + request.getSupplierId()));
         WarehouseEntity warehouse = warehouseRepository
-                .findById(request.getWarehouseId())
+                .findByIdAndIsDeletedFalse(request.getWarehouseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
         purchaseOrder.setSupplier(supplier);
         purchaseOrder.setWarehouse(warehouse);
@@ -160,7 +160,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         PurchaseOrderItemEntity item = purchaseOrderConverter.toItemEntity(request);
         ProductEntity product = productRepository
-                .findById(request.getProductId())
+                .findByIdAndIsDeletedFalse(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
         item.setProduct(product);
         item.setPurchaseOrder(purchaseOrder);

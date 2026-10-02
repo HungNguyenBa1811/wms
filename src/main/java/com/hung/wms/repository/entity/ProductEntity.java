@@ -3,6 +3,7 @@ package com.hung.wms.repository.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -38,6 +39,10 @@ public class ProductEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @ColumnDefault("false")
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "product")
     private List<InventoryEntity> inventories = new ArrayList<>();
