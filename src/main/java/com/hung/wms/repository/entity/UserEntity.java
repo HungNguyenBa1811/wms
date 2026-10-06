@@ -29,7 +29,7 @@ public class UserEntity {
     private String password;
 
     @Column(name = "role", nullable = false)
-    private String user_role;
+    private String role;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

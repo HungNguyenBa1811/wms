@@ -2,6 +2,7 @@ package com.hung.wms.exception;
 
 import com.hung.wms.model.response.error.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -50,6 +51,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             WebRequest request
     ) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<Object> handlePropertyReferenceException(
+            PropertyReferenceException ex, WebRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Invalid sort field: " + ex.getPropertyName(), request);
     }
 
     @ExceptionHandler(Exception.class)

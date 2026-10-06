@@ -44,7 +44,9 @@ logs/
 ### OS ###
 .DS_Store
 Thumbs.db
+*.stackdump
 
 ### Local notes ###
 CONTEXT.md
 CHECKLIST.md
+xoa-thu-dang-duoc-dung.html

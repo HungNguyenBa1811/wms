@@ -23,6 +23,3 @@ spring:
       ddl-auto: create
 
     show-sql: true
-
-biden:
-  jr: HungNguyenBa

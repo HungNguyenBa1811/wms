@@ -2,11 +2,12 @@ package com.hung.wms.service.impl;
 
 import com.hung.wms.converter.ProductConverter;
 import com.hung.wms.enums.PurchaseOrderStatus;
-import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
 import com.hung.wms.model.request.product.ProductRequest;
+import com.hung.wms.model.request.product.ProductSearchRequest;
+import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.product.ProductResponse;
 import com.hung.wms.repository.CategoryRepository;
 import com.hung.wms.repository.InventoryRepository;
@@ -14,16 +15,14 @@ import com.hung.wms.repository.ProductRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.entity.CategoryEntity;
 import com.hung.wms.repository.entity.ProductEntity;
+import com.hung.wms.repository.specification.ProductSpecification;
 import com.hung.wms.service.ProductService;
-import com.sun.jdi.request.DuplicateRequestException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -49,16 +48,14 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponse createProduct(ProductRequest product) {
         ProductEntity productEntity = productConverter.toEntity(product);
-        if (productRepository.existsById(product.getProductCode())) {
-            throw new DuplicateRequestException("Product code already exists");
+        if (productRepository.existsByProductCode(product.getProductCode())) {
+            throw new ResourceDuplicateException("Product code already exists");
         }
         if (product.getCategoryId() != null) {
             CategoryEntity category = categoryRepository
                     .findById(product.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
-        } else {
-            throw new BadRequestException("Category is empty");
         }
         return productConverter.toResponse(productRepository.save(productEntity));
     }
@@ -78,20 +75,15 @@ public class ProductServiceImpl implements ProductService {
                     .findById(product.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
-        } else {
-            throw new BadRequestException("Category is empty");
         }
         return productConverter.toResponse(productEntity);
     }
 
     @Override
-    public List<ProductResponse> findAllProducts(Map<String, Object> params) {
-        List<ProductEntity> productEntityList = productRepository.findAllByIsDeletedFalse();
-        List<ProductResponse> productResponseList = new ArrayList<>();
-        for (ProductEntity items : productEntityList) {
-            productResponseList.add(productConverter.toResponse(items));
-        }
-        return productResponseList;
+    public PageResponse<ProductResponse> findAllProducts(ProductSearchRequest productSearchRequest, Pageable pageable) {
+        Page<ProductEntity> productEntityPage = productRepository.findAll(ProductSpecification.search(productSearchRequest), pageable);
+        // TODO: N+1
+        return new PageResponse<>(productEntityPage.map(productConverter::toResponse));
     }
 
     @Override

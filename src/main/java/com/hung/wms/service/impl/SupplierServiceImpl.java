@@ -5,18 +5,20 @@ import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
 import com.hung.wms.model.request.supplier.SupplierRequest;
+import com.hung.wms.model.request.supplier.SupplierSearchRequest;
+import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.supplier.SupplierResponse;
 import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.SupplierRepository;
 import com.hung.wms.repository.entity.SupplierEntity;
+import com.hung.wms.repository.specification.SupplierSpecification;
 import com.hung.wms.service.SupplierService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class SupplierServiceImpl implements SupplierService {
@@ -50,13 +52,9 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
-    public List<SupplierResponse> findAllSuppliers() {
-        List<SupplierEntity> supplierEntityList = supplierRepository.findAllByIsDeletedFalse();
-        List<SupplierResponse> supplierResponseList = new ArrayList<>();
-        for (SupplierEntity items : supplierEntityList) {
-            supplierResponseList.add(supplierConverter.toResponse(items));
-        }
-        return supplierResponseList;
+    public PageResponse<SupplierResponse> findAllSuppliers(SupplierSearchRequest supplierSearchRequest, Pageable pageable) {
+        Page<SupplierEntity> supplierEntityPage = supplierRepository.findAll(SupplierSpecification.search(supplierSearchRequest), pageable);
+        return new PageResponse<>(supplierEntityPage.map(supplierConverter::toResponse));
     }
 
     @Override
