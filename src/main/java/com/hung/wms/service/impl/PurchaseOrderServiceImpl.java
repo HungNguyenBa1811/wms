@@ -19,6 +19,8 @@ import com.hung.wms.repository.UserRepository;
 import com.hung.wms.repository.WarehouseRepository;
 import com.hung.wms.repository.entity.*;
 import com.hung.wms.service.PurchaseOrderService;
+
+import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,6 +131,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         }
 
         purchaseOrder.setStatus(PurchaseOrderStatus.RECEIVED);
+        purchaseOrder.setReceivedAt(LocalDateTime.now());
+        purchaseOrder.setReceivedBy(receivedBy);
         return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
 
@@ -158,9 +162,13 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         if (request.getUnitCost() == null || request.getUnitCost().compareTo(BigDecimal.ZERO) < 0)
             throw new BadRequestException("unitCost must not be negative");
 
+        if (purchaseOrder.getPurchaseOrderItems().stream()
+                .anyMatch(item -> item.getProduct().getId().equals(request.getProductId())))
+            throw new BadRequestException("Product already exists in this purchase order");
+
         PurchaseOrderItemEntity item = purchaseOrderConverter.toItemEntity(request);
         ProductEntity product = productRepository
-                .findByIdAndIsDeletedFalse(request.getProductId())
+                .findByIdAndIsDeletedFalseForUpdate(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
         item.setProduct(product);
         item.setPurchaseOrder(purchaseOrder);

@@ -64,7 +64,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponse updateProduct(String id, ProductRequest product) {
         ProductEntity productEntity = productRepository
-                .findByIdAndIsDeletedFalse(id)
+                .findByIdAndIsDeletedFalseForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         if (productRepository.existsByProductCodeAndIdNot(product.getProductCode(), id)) {
             throw new ResourceDuplicateException("Product code already exists");
@@ -98,7 +98,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void deleteProductById(String id) {
         ProductEntity productEntity = productRepository
-                .findByIdAndIsDeletedFalse(id)
+                .findByIdAndIsDeletedFalseForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         if (inventoryRepository.existsByProduct_IdAndQuantityGreaterThan(id, 0))
             throw new ResourceInUseException("Cannot delete product " + id + ": it still has stock in inventory");

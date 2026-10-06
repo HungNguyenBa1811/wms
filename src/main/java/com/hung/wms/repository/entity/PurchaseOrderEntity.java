@@ -35,6 +35,13 @@ public class PurchaseOrderEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "received_at")
+    private LocalDateTime receivedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "received_by_id")
+    private UserEntity receivedBy;
+
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItemEntity> purchaseOrderItems = new ArrayList<>();
 }
