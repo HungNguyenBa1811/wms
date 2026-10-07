@@ -5,6 +5,7 @@ import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
 import com.hung.wms.model.request.purchaseorder.ReceivePurchaseOrderRequest;
 import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
 import com.hung.wms.service.PurchaseOrderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,21 +32,21 @@ public class PurchaseOrderAPI {
     }
 
     @PostMapping
-    public ResponseEntity<PurchaseOrderResponse> createPurchaseOrder(@RequestBody PurchaseOrderRequest purchaseOrderRequest) {
+    public ResponseEntity<PurchaseOrderResponse> createPurchaseOrder(@Valid @RequestBody PurchaseOrderRequest purchaseOrderRequest) {
         PurchaseOrderResponse result = purchaseOrderService.createPurchaseOrder(purchaseOrderRequest);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @PostMapping("/{id}/items")
     public ResponseEntity<PurchaseOrderResponse> addPurchaseOrderItem(@PathVariable String id,
-                                                                      @RequestBody PurchaseOrderItemRequest purchaseOrderItemRequest) {
+                                                                      @Valid @RequestBody PurchaseOrderItemRequest purchaseOrderItemRequest) {
         PurchaseOrderResponse result = purchaseOrderService.addPurchaseOrderItem(id, purchaseOrderItemRequest);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @PostMapping("/{id}/receive")
     public ResponseEntity<PurchaseOrderResponse> receivePurchaseOrder(@PathVariable String id,
-                                                                      @RequestBody ReceivePurchaseOrderRequest receivePurchaseOrderRequest) {
+                                                                      @Valid @RequestBody ReceivePurchaseOrderRequest receivePurchaseOrderRequest) {
         PurchaseOrderResponse result = purchaseOrderService.receivePurchaseOrder(id, receivePurchaseOrderRequest);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }

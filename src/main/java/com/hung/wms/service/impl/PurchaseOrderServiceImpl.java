@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,11 +57,6 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public PurchaseOrderResponse createPurchaseOrder(PurchaseOrderRequest request) {
-        if (request.getSupplierId() == null)
-            throw new BadRequestException("supplierId is required");
-        if (request.getWarehouseId() == null)
-            throw new BadRequestException("warehouseId is required");
-
         PurchaseOrderEntity purchaseOrder = purchaseOrderConverter.toEntity(request);
         SupplierEntity supplier = supplierRepository
                 .findByIdAndIsDeletedFalse(request.getSupplierId())
@@ -73,10 +67,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         purchaseOrder.setSupplier(supplier);
         purchaseOrder.setWarehouse(warehouse);
         purchaseOrder.setStatus(PurchaseOrderStatus.PENDING);
-        if (request.getItems() != null) {
-            for (PurchaseOrderItemRequest itemRequest : request.getItems()) {
-                addItem(purchaseOrder, itemRequest);
-            }
+        for (PurchaseOrderItemRequest itemRequest : request.getItems()) {
+            addItem(purchaseOrder, itemRequest);
         }
         return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
@@ -96,9 +88,6 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional
     public PurchaseOrderResponse receivePurchaseOrder(String id, ReceivePurchaseOrderRequest request) {
-        if (request.getReceivedBy() == null)
-            throw new BadRequestException("receivedBy is required");
-
         PurchaseOrderEntity purchaseOrder = purchaseOrderRepository
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
@@ -155,13 +144,6 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     private void addItem(PurchaseOrderEntity purchaseOrder, PurchaseOrderItemRequest request) {
-        if (request.getProductId() == null)
-            throw new BadRequestException("productId is required");
-        if (request.getQuantity() == null || request.getQuantity() <= 0)
-            throw new BadRequestException("quantity must be greater than 0");
-        if (request.getUnitCost() == null || request.getUnitCost().compareTo(BigDecimal.ZERO) < 0)
-            throw new BadRequestException("unitCost must not be negative");
-
         if (purchaseOrder.getPurchaseOrderItems().stream()
                 .anyMatch(item -> item.getProduct().getId().equals(request.getProductId())))
             throw new BadRequestException("Product already exists in this purchase order");
