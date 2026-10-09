@@ -19,7 +19,7 @@ public class ProductSearchRequest {
     private BigDecimal priceTo;
 
     @AssertTrue(message = "priceFrom must be less than or equal to priceTo")
-    public boolean isPriceRangeValid() {
+    public boolean isPriceRange() {
         return priceFrom == null || priceTo == null || priceFrom.compareTo(priceTo) <= 0;
     }
 }

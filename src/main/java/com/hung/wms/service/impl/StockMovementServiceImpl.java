@@ -8,6 +8,7 @@ import com.hung.wms.repository.entity.StockMovementEntity;
 import com.hung.wms.service.StockMovementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,7 @@ public class StockMovementServiceImpl implements StockMovementService {
     private StockMovementConverter stockMovementConverter;
 
     @Override
+    @Transactional(readOnly = true)
     public List<StockMovementResponse> findAllStockMovements(String warehouseId, String productId) {
         List<StockMovementEntity> stockMovementEntityList;
         if (warehouseId != null && productId != null) {
@@ -42,6 +44,7 @@ public class StockMovementServiceImpl implements StockMovementService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public StockMovementResponse findStockMovementById(String id) {
         StockMovementEntity stockMovement = stockMovementRepository
                 .findById(id)

@@ -7,6 +7,7 @@ import com.hung.wms.repository.entity.InventoryEntity;
 import com.hung.wms.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ public class InventoryServiceImpl implements InventoryService {
     private InventoryConverter inventoryConverter;
 
     @Override
+    @Transactional(readOnly = true)
     public List<InventoryResponse> findAllInventories(String warehouseId, String productId) {
         List<InventoryEntity> inventoryEntityList;
         if (warehouseId != null && productId != null) {

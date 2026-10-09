@@ -126,6 +126,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PurchaseOrderResponse> findAllPurchaseOrders() {
         List<PurchaseOrderEntity> purchaseOrderEntityList = purchaseOrderRepository.findAll();
         List<PurchaseOrderResponse> purchaseOrderResponseList = new ArrayList<>();
@@ -136,6 +137,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PurchaseOrderResponse findPurchaseOrderById(String id) {
         PurchaseOrderEntity purchaseOrder = purchaseOrderRepository
                 .findById(id)

@@ -6,6 +6,7 @@ import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -126,6 +127,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, "Request body is missing or malformed", detail, request);
     }
 
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception ex,
+            Object body,
+            HttpHeaders headers,
+            HttpStatusCode statusCode,
+            WebRequest request
+    ) {
+        ResponseEntity<Object> response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
+        if (response == null || !(response.getBody() instanceof ProblemDetail problemDetail))
+            return response;
+        HttpStatus status = HttpStatus.valueOf(response.getStatusCode().value());
+        String message = problemDetail.getDetail() != null ? problemDetail.getDetail() : status.getReasonPhrase();
+        return new ResponseEntity<>(buildErrorResponse(status, message, new ArrayList<>(), request), response.getHeaders(), status);
+    }
+
     private String toFieldPath(List<JacksonException.Reference> path) {
         StringBuilder field = new StringBuilder();
         for (JacksonException.Reference reference : path) {
@@ -145,12 +162,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private ResponseEntity<Object> buildResponse(HttpStatus status, String message, List<String> detail, WebRequest request) {
+        return new ResponseEntity<>(buildErrorResponse(status, message, detail, request), status);
+    }
+
+    private ErrorResponse buildErrorResponse(HttpStatus status, String message, List<String> detail, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setStatus(status.value());
         errorResponse.setError(status.getReasonPhrase());
         errorResponse.setMessage(message);
         errorResponse.setDetail(detail);
         errorResponse.setPath(request.getDescription(false).replaceFirst("^uri=", ""));
-        return new ResponseEntity<>(errorResponse, status);
+        return errorResponse;
     }
 }

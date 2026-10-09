@@ -52,12 +52,14 @@ public class SupplierServiceImpl implements SupplierService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<SupplierResponse> findAllSuppliers(SupplierSearchRequest supplierSearchRequest, Pageable pageable) {
         Page<SupplierEntity> supplierEntityPage = supplierRepository.findAll(SupplierSpecification.search(supplierSearchRequest), pageable);
         return new PageResponse<>(supplierEntityPage.map(supplierConverter::toResponse));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public SupplierResponse findSupplierById(String id) {
         SupplierEntity supplier = supplierRepository
                 .findByIdAndIsDeletedFalse(id)

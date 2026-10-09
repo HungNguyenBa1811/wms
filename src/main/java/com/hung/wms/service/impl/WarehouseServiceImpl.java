@@ -62,12 +62,14 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<WarehouseResponse> findAllWarehouses(WarehouseSearchRequest warehouseSearchRequest, Pageable pageable) {
         Page<WarehouseEntity> warehouseEntityPage = warehouseRepository.findAll(WarehouseSpecification.search(warehouseSearchRequest), pageable);
         return new PageResponse<>(warehouseEntityPage.map(warehouseConverter::toResponse));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public WarehouseResponse findWarehouseById(String id) {
         WarehouseEntity warehouse = warehouseRepository
                 .findByIdAndIsDeletedFalse(id)
