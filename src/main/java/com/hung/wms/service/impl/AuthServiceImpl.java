@@ -4,12 +4,17 @@ import com.hung.wms.converter.UserConverter;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.model.request.auth.LoginRequest;
 import com.hung.wms.model.request.auth.RegisterRequest;
+import com.hung.wms.model.response.auth.TokenResponse;
 import com.hung.wms.model.response.user.UserResponse;
 import com.hung.wms.repository.UserRepository;
 import com.hung.wms.repository.entity.UserEntity;
 import com.hung.wms.service.AuthService;
+import com.hung.wms.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +32,12 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtService jwtService;
+
     @Override
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -42,12 +53,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public UserResponse login(LoginRequest request) {
-        UserEntity user = userRepository
-                .findByUsername(request.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
-            throw new BadCredentialsException("Invalid username or password");
-        return userConverter.toResponse(user);
+    public TokenResponse login(LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(request.getUsername(), request.getPassword()));
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        TokenResponse response = new TokenResponse();
+        response.setAccessToken(jwtService.generateToken(userDetails));
+        return response;
     }
 }

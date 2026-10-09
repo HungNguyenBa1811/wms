@@ -2,6 +2,7 @@ package com.hung.wms.api;
 
 import com.hung.wms.model.request.auth.LoginRequest;
 import com.hung.wms.model.request.auth.RegisterRequest;
+import com.hung.wms.model.response.auth.TokenResponse;
 import com.hung.wms.model.response.user.UserResponse;
 import com.hung.wms.service.AuthService;
 import jakarta.validation.Valid;
@@ -26,8 +27,8 @@ public class AuthAPI {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        UserResponse result = authService.login(loginRequest);
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        TokenResponse result = authService.login(loginRequest);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 }

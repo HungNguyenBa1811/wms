@@ -15,10 +15,6 @@ import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Race giữa "check còn được dùng rồi set isDeleted" và "tạo PO / add item dùng chính bản ghi đó".
- * Invariant: không bao giờ có bản ghi đã xóa mềm mà vẫn nằm trong PO PENDING.
- */
 @DisplayName("Xóa mềm song song với tạo PO / add item")
 class SoftDeleteConcurrencyTest extends ConcurrencyTestSupport {
     private WarehouseEntity warehouse;

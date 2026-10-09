@@ -13,10 +13,6 @@ import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * existsByXxxCode() rồi save() là check-then-act: 2 request cùng mã đều qua bước check,
- * request commit sau đụng unique constraint -> DataIntegrityViolationException -> 500 thay vì 409.
- */
 @DisplayName("Tạo trùng mã song song")
 class DuplicateCodeConcurrencyTest extends ConcurrencyTestSupport {
 

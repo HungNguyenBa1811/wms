@@ -42,12 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-/**
- * Base for tests that need several real transactions running at the same time.
- * Runs against a real MySQL (row locks, gap locks and deadlocks behave differently on H2),
- * using a separate database so the dev database is not touched. Credentials come from the uat profile.
- * Test classes must not be @Transactional: every thread has to commit on its own.
- */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {

@@ -23,3 +23,6 @@ spring:
       ddl-auto: create
 
     show-sql: true
+
+jwt:
+  expiration: 10d
