@@ -4,7 +4,6 @@ package com.hung.wms.repository.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,10 +30,14 @@ public class UserEntity {
     @Column(name = "role", nullable = false)
     private String role;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "performedBy", fetch = FetchType.LAZY)
     private List<StockMovementEntity> stockMovements = new ArrayList<>();
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

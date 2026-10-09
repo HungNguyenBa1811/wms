@@ -4,7 +4,6 @@ import com.hung.wms.enums.PurchaseOrderStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,7 +30,6 @@ public class PurchaseOrderEntity {
     @Column(name = "status", nullable = false)
     private PurchaseOrderStatus status;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -44,4 +42,9 @@ public class PurchaseOrderEntity {
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItemEntity> purchaseOrderItems = new ArrayList<>();
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,7 +27,6 @@ public class WarehouseEntity {
     @Column(name = "location", nullable = false)
     private String location;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -44,4 +42,9 @@ public class WarehouseEntity {
 
     @OneToMany(mappedBy = "warehouse")
     private List<StockMovementEntity> stockMovements = new ArrayList<>();
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
