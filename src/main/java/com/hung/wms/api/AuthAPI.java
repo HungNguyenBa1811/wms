@@ -5,6 +5,7 @@ import com.hung.wms.model.request.auth.RegisterRequest;
 import com.hung.wms.model.response.auth.TokenResponse;
 import com.hung.wms.model.response.user.UserResponse;
 import com.hung.wms.service.AuthService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@SecurityRequirements
 @RestController
 @RequestMapping("/api/auth")
 public class AuthAPI {

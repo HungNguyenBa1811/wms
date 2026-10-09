@@ -2,12 +2,44 @@
   "info": {
     "name": "WMS API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Requires the seed data in src/main/resources/data.sql (reloaded on every startup, ddl-auto: create). Run the whole collection in order from a fresh start: Create product saves `productId`, Create purchase order saves `purchaseOrderId`, and Soft delete - in use needs the stock added by the Purchase order flow."
+    "description": "Requires the seed data in src/main/resources/data.sql (reloaded on every startup, ddl-auto: create). Every endpoint except /api/auth/** needs a JWT: the collection sends `Authorization: Bearer {{accessToken}}`. Run the whole collection in order from a fresh start: the Auth folder runs first and ends with Login as admin, which saves `accessToken`. If you run a single request and `accessToken` is empty, the collection pre-request script logs in as admin / admin first. Create product saves `productId`, Create purchase order saves `purchaseOrderId`, and Soft delete - in use needs the stock added by the Purchase order flow."
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8081"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": "admin"
+    },
+    {
+      "key": "newUsername",
+      "value": ""
+    },
+    {
+      "key": "newEmail",
+      "value": ""
+    },
+    {
+      "key": "newPassword",
+      "value": "Password123"
+    },
+    {
+      "key": "roleUsername",
+      "value": ""
+    },
+    {
+      "key": "staffToken",
+      "value": ""
     },
     {
       "key": "categoryId",
@@ -55,6 +87,495 @@
     }
   ],
   "item": [
+    {
+      "name": "Auth",
+      "description": "Runs first. /api/auth/** is public, so these requests send no token. Ends with Login as admin, which saves `accessToken` for the rest of the collection.",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Register new user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fresh username / email each run, so the request can be sent again without restarting",
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('newUsername', 'user_' + suffix);",
+                  "pm.collectionVariables.set('newEmail', 'user_' + suffix + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns the new user as STAFF', () => {",
+                  "  pm.expect(body.id).to.be.a('string');",
+                  "  pm.expect(body.username).to.eql(pm.collectionVariables.get('newUsername'));",
+                  "  pm.expect(body.email).to.eql(pm.collectionVariables.get('newEmail'));",
+                  "  pm.expect(body.role).to.eql('STAFF');",
+                  "});",
+                  "pm.test('createdAt is set', () => pm.expect(body.createdAt).to.be.a('string'));",
+                  "pm.test('password is not returned', () => pm.expect(body).to.not.have.property('password'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{newUsername}}\",\n  \"email\": \"{{newEmail}}\",\n  \"password\": \"{{newPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register - duplicate username -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{newUsername}}\",\n  \"email\": \"other_{{newEmail}}\",\n  \"password\": \"{{newPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register - duplicate email -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"other_{{newUsername}}\",\n  \"email\": \"{{newEmail}}\",\n  \"password\": \"{{newPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register - invalid fields -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('reports every invalid field', () => {",
+                  "  const fields = pm.response.json().detail.map(d => d.split(':')[0]);",
+                  "  pm.expect(fields).to.include.members(['username', 'email', 'password']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"a b\",\n  \"email\": \"not-an-email\",\n  \"password\": \"short\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register - role in body is ignored",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('roleUsername', 'role_' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('role is still STAFF', () => pm.expect(pm.response.json().role).to.eql('STAFF'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{roleUsername}}\",\n  \"email\": \"{{roleUsername}}@example.com\",\n  \"password\": \"{{newPassword}}\",\n  \"role\": \"ADMIN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - wrong password -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('generic message', () => pm.expect(pm.response.json().message).to.eql('Invalid username or password'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"wrong-password\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - unknown username -> 401 (same message)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('same message as wrong password', () => pm.expect(pm.response.json().message).to.eql('Invalid username or password'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"no-such-user\",\n  \"password\": \"whatever\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - missing password -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as new user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns a bearer token', () => {",
+                  "  pm.expect(body.tokenType).to.eql('Bearer');",
+                  "  pm.expect(body.accessToken.split('.')).to.have.length(3);",
+                  "});",
+                  "pm.collectionVariables.set('staffToken', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{newUsername}}\",\n  \"password\": \"{{newPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Staff token can call a protected endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "No token -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Malformed token -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "not-a-jwt",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tampered signature -> 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Change one character in the middle of the signature, so it no longer matches the payload",
+                  "const [header, payload, signature] = pm.collectionVariables.get('staffToken').split('.');",
+                  "const i = Math.floor(signature.length / 2);",
+                  "const swapped = signature[i] === 'A' ? 'B' : 'A';",
+                  "pm.variables.set('tamperedToken', [header, payload, signature.slice(0, i) + swapped + signature.slice(i + 1)].join('.'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tamperedToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Basic auth instead of bearer -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{adminUsername}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{adminPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login as admin (saves accessToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns a bearer token', () => {",
+                  "  pm.expect(body.tokenType).to.eql('Bearer');",
+                  "  pm.expect(body.accessToken).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "Get all products (seeded)",
       "event": [
@@ -1270,6 +1791,41 @@
           }
         }
       ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Log in as the seeded admin when there is no token yet, so a single request can run on its own",
+          "if (!pm.request.url.getPath().startsWith('/api/auth/') && !pm.collectionVariables.get('accessToken')) {",
+          "  pm.sendRequest({",
+          "    url: pm.collectionVariables.get('baseUrl') + '/api/auth/login',",
+          "    method: 'POST',",
+          "    header: { 'Content-Type': 'application/json' },",
+          "    body: { mode: 'raw', raw: JSON.stringify({",
+          "      username: pm.collectionVariables.get('adminUsername'),",
+          "      password: pm.collectionVariables.get('adminPassword')",
+          "    }) }",
+          "  }, (err, res) => {",
+          "    if (err || res.code !== 200) { console.error('Auto login failed', err || res.code); return; }",
+          "    pm.collectionVariables.set('accessToken', res.json().accessToken);",
+          "  });",
+          "}"
+        ]
+      }
     }
   ]
 }
