@@ -1,6 +1,7 @@
 package com.hung.wms.service.impl;
 
 import com.hung.wms.converter.UserConverter;
+import com.hung.wms.enums.Role;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.model.request.auth.LoginRequest;
 import com.hung.wms.model.request.auth.RegisterRequest;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    private static final String DEFAULT_ROLE = "STAFF";
+    private static final Role DEFAULT_ROLE = Role.STAFF;
 
     @Autowired
     private UserRepository userRepository;

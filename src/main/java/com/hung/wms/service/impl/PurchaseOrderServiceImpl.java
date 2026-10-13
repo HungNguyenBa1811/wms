@@ -8,7 +8,9 @@ import com.hung.wms.exception.InvalidStateException;
 import com.hung.wms.exception.ResourceNotFoundException;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
+import com.hung.wms.model.request.purchaseorder.PurchaseOrderSearchRequest;
 import com.hung.wms.model.request.purchaseorder.ReceivePurchaseOrderRequest;
+import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
@@ -18,15 +20,16 @@ import com.hung.wms.repository.SupplierRepository;
 import com.hung.wms.repository.UserRepository;
 import com.hung.wms.repository.WarehouseRepository;
 import com.hung.wms.repository.entity.*;
+import com.hung.wms.repository.specification.PurchaseOrderSpecification;
 import com.hung.wms.service.PurchaseOrderService;
 
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class PurchaseOrderServiceImpl implements PurchaseOrderService {
@@ -127,13 +130,11 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PurchaseOrderResponse> findAllPurchaseOrders() {
-        List<PurchaseOrderEntity> purchaseOrderEntityList = purchaseOrderRepository.findAll();
-        List<PurchaseOrderResponse> purchaseOrderResponseList = new ArrayList<>();
-        for (PurchaseOrderEntity items : purchaseOrderEntityList) {
-            purchaseOrderResponseList.add(purchaseOrderConverter.toResponse(items));
-        }
-        return purchaseOrderResponseList;
+    public PageResponse<PurchaseOrderResponse> findAllPurchaseOrders(PurchaseOrderSearchRequest request, Pageable pageable) {
+        Page<PurchaseOrderEntity> purchaseOrderEntityPage = purchaseOrderRepository
+                .findAll(PurchaseOrderSpecification.search(request), pageable);
+        // TODO: N+1 (supplier, warehouse, items, product)
+        return new PageResponse<>(purchaseOrderEntityPage.map(purchaseOrderConverter::toResponse));
     }
 
     @Override

@@ -1,9 +1,10 @@
 package com.hung.wms.service;
 
+import com.hung.wms.model.request.inventory.InventorySearchRequest;
+import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.inventory.InventoryResponse;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface InventoryService {
-    List<InventoryResponse> findAllInventories(String warehouseId, String productId);
+    PageResponse<InventoryResponse> findAllInventories(InventorySearchRequest request, Pageable pageable);
 }

@@ -2,16 +2,18 @@ package com.hung.wms.service.impl;
 
 import com.hung.wms.converter.StockMovementConverter;
 import com.hung.wms.exception.ResourceNotFoundException;
+import com.hung.wms.model.request.stockmovement.StockMovementSearchRequest;
+import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.stockmovement.StockMovementResponse;
 import com.hung.wms.repository.StockMovementRepository;
 import com.hung.wms.repository.entity.StockMovementEntity;
+import com.hung.wms.repository.specification.StockMovementSpecification;
 import com.hung.wms.service.StockMovementService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class StockMovementServiceImpl implements StockMovementService {
@@ -23,24 +25,10 @@ public class StockMovementServiceImpl implements StockMovementService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<StockMovementResponse> findAllStockMovements(String warehouseId, String productId) {
-        List<StockMovementEntity> stockMovementEntityList;
-        if (warehouseId != null && productId != null) {
-            stockMovementEntityList = stockMovementRepository
-                    .findByWarehouse_IdAndProduct_IdOrderByCreatedAtDesc(warehouseId, productId);
-        } else if (warehouseId != null) {
-            stockMovementEntityList = stockMovementRepository.findByWarehouse_IdOrderByCreatedAtDesc(warehouseId);
-        } else if (productId != null) {
-            stockMovementEntityList = stockMovementRepository.findByProduct_IdOrderByCreatedAtDesc(productId);
-        } else {
-            stockMovementEntityList = stockMovementRepository.findAllByOrderByCreatedAtDesc();
-        }
-
-        List<StockMovementResponse> stockMovementResponseList = new ArrayList<>();
-        for (StockMovementEntity items : stockMovementEntityList) {
-            stockMovementResponseList.add(stockMovementConverter.toResponse(items));
-        }
-        return stockMovementResponseList;
+    public PageResponse<StockMovementResponse> findAllStockMovements(StockMovementSearchRequest request, Pageable pageable) {
+        Page<StockMovementEntity> stockMovementEntityPage = stockMovementRepository
+                .findAll(StockMovementSpecification.search(request), pageable);
+        return new PageResponse<>(stockMovementEntityPage.map(stockMovementConverter::toResponse));
     }
 
     @Override

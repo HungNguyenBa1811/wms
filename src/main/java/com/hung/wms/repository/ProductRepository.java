@@ -22,6 +22,7 @@ public interface ProductRepository extends JpaRepository<ProductEntity, String>,
     boolean existsByProductCode(String productCode);
     boolean existsByProductCodeAndIdNot(String productCode, String id);
     Optional<ProductEntity> findByIdAndIsDeletedFalse(String id);
+    boolean existsByCategory_IdAndIsDeletedFalse(String categoryId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id AND p.isDeleted = false")

@@ -1,0 +1,24 @@
+# MySQL for local development. Start with: docker compose up -d
+# Credentials match application-uat.example.yaml; change both together.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: wms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wms
+      MYSQL_USER: wms
+      MYSQL_PASSWORD: wms
+    ports:
+      - "3306:3306"
+    volumes:
+      - wms-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  wms-mysql-data:

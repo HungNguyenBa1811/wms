@@ -3,6 +3,7 @@ package com.hung.wms.repository.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,10 @@ public class CategoryEntity {
 
     @Column(name = "description")
     private String description;
+
+    @ColumnDefault("false")
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "category")
     private List<ProductEntity> products = new ArrayList<>();

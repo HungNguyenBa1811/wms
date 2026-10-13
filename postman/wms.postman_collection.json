@@ -84,6 +84,18 @@
     {
       "key": "supplierId2",
       "value": "d2d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2"
+    },
+    {
+      "key": "newCategoryId",
+      "value": ""
+    },
+    {
+      "key": "shortToken",
+      "value": ""
+    },
+    {
+      "key": "shortTokenLifetime",
+      "value": ""
     }
   ],
   "item": [
@@ -228,6 +240,38 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"a b\",\n  \"email\": \"not-an-email\",\n  \"password\": \"short\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register - long non-ASCII password -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('explains the byte limit', () => pm.expect(pm.response.json().detail.join(' ')).to.include('72 bytes'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"vn_{{$timestamp}}\",\n  \"email\": \"vn_{{$timestamp}}@example.com\",\n  \"password\": \"\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\\u0111\\u1eb7c\"\n}"
             }
           }
         },
@@ -418,6 +462,134 @@
           }
         },
         {
+          "name": "Staff cannot create category -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/categories",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Staff should not create this\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Staff cannot delete product -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/{{seededProductId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Staff can still read master data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categories",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Seeded staff / staff can log in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns a bearer token', () => pm.expect(pm.response.json().tokenType).to.eql('Bearer'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"staff\",\n  \"password\": \"staff\"\n}"
+            }
+          }
+        },
+        {
           "name": "No token -> 401",
           "event": [
             {
@@ -537,6 +709,96 @@
                   "type": "string"
                 }
               ]
+            }
+          }
+        },
+        {
+          "name": "Login with a broken token in the header -> still 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('still returns a token', () => pm.expect(pm.response.json().accessToken.split('.')).to.have.length(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "not-a-jwt",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login with a tampered token in the header -> still 200",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Same trick as 'Tampered signature -> 401': flip one character of the signature",
+                  "const [header, payload, signature] = pm.collectionVariables.get('staffToken').split('.');",
+                  "const i = Math.floor(signature.length / 2);",
+                  "const swapped = signature[i] === 'A' ? 'B' : 'A';",
+                  "pm.variables.set('tamperedToken', [header, payload, signature.slice(0, i) + swapped + signature.slice(i + 1)].join('.'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tamperedToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
             }
           }
         },
@@ -1478,6 +1740,408 @@
       ]
     },
     {
+      "name": "Category",
+      "description": "Category CRUD, filter / paging, duplicate name, soft delete and delete guard. Independent of the other folders.",
+      "item": [
+        {
+          "name": "Categories - list (sorted by name)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has seeded categories', () => pm.expect(body.content.length).to.be.at.least(3));",
+                  "pm.test('sorted by name asc', () => pm.expect(body.content[0].name).to.eql('Electronics'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories"
+          }
+        },
+        {
+          "name": "Categories - filter by name (case-insensitive)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('only Furniture', () => {",
+                  "  pm.expect(body.content).to.have.length(1);",
+                  "  pm.expect(body.content[0].name).to.eql('Furniture');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories?name=furn"
+          }
+        },
+        {
+          "name": "Categories - page size 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('one item per page', () => pm.expect(body.content).to.have.length(1));",
+                  "pm.test('totalElements >= 3', () => pm.expect(body.totalElements).to.be.at.least(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories?size=1"
+          }
+        },
+        {
+          "name": "Categories - sort by unknown field -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories?sort=abc"
+          }
+        },
+        {
+          "name": "Get seeded category by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is Electronics', () => pm.expect(pm.response.json().name).to.eql('Electronics'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Create category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
+                  "pm.test('name saved', () => pm.expect(body.name).to.eql('Toys'));",
+                  "pm.collectionVariables.set('newCategoryId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/categories",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toys\",\n  \"description\": \"Toys and games\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create - duplicate name -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/categories",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toys\",\n  \"description\": \"Dup\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create - missing name -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/categories",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"No name\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update category (partial - keeps name)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('name kept', () => pm.expect(body.name).to.eql('Toys'));",
+                  "pm.test('description updated', () => pm.expect(body.description).to.eql('Updated description'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/categories/{{newCategoryId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update - name taken by another category -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/categories/{{newCategoryId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update - unknown category id -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/categories/00000000-0000-0000-0000-000000000000",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ghost\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete seeded category that still has products -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Delete created category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/categories/{{newCategoryId}}"
+          }
+        },
+        {
+          "name": "Get deleted category -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories/{{newCategoryId}}"
+          }
+        },
+        {
+          "name": "Delete category again -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/categories/{{newCategoryId}}"
+          }
+        },
+        {
+          "name": "List does not include deleted category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no Toys', () => pm.expect(pm.response.json().content).to.have.length(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories?name=Toys"
+          }
+        },
+        {
+          "name": "Create product with deleted categoryId -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"CAT-DEL-001\",\n  \"name\": \"Orphan\",\n  \"price\": 1.0,\n  \"categoryId\": \"{{newCategoryId}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Purchase order flow",
       "description": "Run in order. Create saves `purchaseOrderId`. Receive should add stock to inventory and create IN stock movements.",
       "item": [
@@ -1549,7 +2213,23 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/purchase-orders"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('is a page containing the created PO', () => {",
+                  "  pm.expect(body).to.have.all.keys('content', 'page', 'size', 'totalPages', 'totalElements');",
+                  "  pm.expect(body.content.some(po => po.id === pm.collectionVariables.get('purchaseOrderId'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get purchase order by id",
@@ -1625,7 +2305,7 @@
                 "exec": [
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('seeded mouse has stock', () => {",
-                  "  const row = pm.response.json().find(i => i.productId === pm.collectionVariables.get('seededProductId'));",
+                  "  const row = pm.response.json().content.find(i => i.productId === pm.collectionVariables.get('seededProductId'));",
                   "  pm.expect(row.quantity).to.be.at.least(100);",
                   "});"
                 ]
@@ -1654,7 +2334,7 @@
                 "exec": [
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('has IN movements', () => {",
-                  "  pm.expect(pm.response.json().some(m => m.movementType === 'IN')).to.be.true;",
+                  "  pm.expect(pm.response.json().content.some(m => m.movementType === 'IN')).to.be.true;",
                   "});"
                 ]
               }
@@ -1663,6 +2343,214 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/stock-movements?warehouseId={{warehouseId}}"
+          }
+        },
+        {
+          "name": "Purchase orders - filter status=RECEIVED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('every PO is RECEIVED and includes the received PO', () => {",
+                  "  pm.expect(body.content.length).to.be.at.least(1);",
+                  "  body.content.forEach(po => pm.expect(po.status).to.eql('RECEIVED'));",
+                  "  pm.expect(body.content.some(po => po.id === pm.collectionVariables.get('purchaseOrderId'))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders?status=RECEIVED"
+          }
+        },
+        {
+          "name": "Purchase orders - filter status=PENDING excludes received PO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('received PO is not in PENDING list', () => {",
+                  "  body.content.forEach(po => pm.expect(po.status).to.eql('PENDING'));",
+                  "  pm.expect(body.content.some(po => po.id === pm.collectionVariables.get('purchaseOrderId'))).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders?status=PENDING"
+          }
+        },
+        {
+          "name": "Purchase orders - filter by supplierId and warehouseId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('every PO matches supplier and warehouse', () => {",
+                  "  pm.expect(body.content.length).to.be.at.least(1);",
+                  "  body.content.forEach(po => {",
+                  "    pm.expect(po.supplierId).to.eql(pm.collectionVariables.get('supplierId'));",
+                  "    pm.expect(po.warehouseId).to.eql(pm.collectionVariables.get('warehouseId'));",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders?supplierId={{supplierId}}&warehouseId={{warehouseId}}"
+          }
+        },
+        {
+          "name": "Purchase orders - page size 1 sorted by createdAt asc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('one element per page', () => {",
+                  "  pm.expect(body.size).to.eql(1);",
+                  "  pm.expect(body.content).to.have.length(1);",
+                  "  pm.expect(body.totalPages).to.eql(body.totalElements);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders?size=1&sort=createdAt,asc"
+          }
+        },
+        {
+          "name": "Purchase orders - invalid status -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detail names the status field', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.message).to.eql('Validation failed');",
+                  "  pm.expect(body.detail.join(' ')).to.include(\"status: invalid value 'FOO'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/purchase-orders?status=FOO"
+          }
+        },
+        {
+          "name": "Stock movements - filter movementType=IN, page size 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('one IN movement of the seeded product', () => {",
+                  "  pm.expect(body.content).to.have.length(1);",
+                  "  pm.expect(body.totalElements).to.be.at.least(1);",
+                  "  pm.expect(body.content[0].movementType).to.eql('IN');",
+                  "  pm.expect(body.content[0].productId).to.eql(pm.collectionVariables.get('seededProductId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/stock-movements?movementType=IN&productId={{seededProductId}}&size=1"
+          }
+        },
+        {
+          "name": "Stock movements - invalid movementType -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detail names the movementType field', () => {",
+                  "  pm.expect(pm.response.json().detail.join(' ')).to.include(\"movementType: invalid value 'SIDEWAYS'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/stock-movements?movementType=SIDEWAYS"
+          }
+        },
+        {
+          "name": "Inventory - filter by warehouseId and productId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('exactly one row for the pair', () => {",
+                  "  pm.expect(body.totalElements).to.eql(1);",
+                  "  pm.expect(body.content[0].warehouseId).to.eql(pm.collectionVariables.get('warehouseId'));",
+                  "  pm.expect(body.content[0].productId).to.eql(pm.collectionVariables.get('seededProductId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/inventory?warehouseId={{warehouseId}}&productId={{seededProductId}}"
+          }
+        },
+        {
+          "name": "Inventory - sort by unknown field -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/inventory?sort=abc"
           }
         }
       ]
@@ -1791,6 +2679,162 @@
           }
         }
       ]
+    },
+    {
+      "name": "JWT expiry (needs jwt.expiration: 10s)",
+      "description": "Run this folder on its own with a short token lifetime, e.g. start the app with --jwt.expiration=10s. The second request waits until the token has expired (up to 60s). With the default 10d lifetime the 401 test is skipped, not failed.",
+      "item": [
+        {
+          "name": "Login (short-lived token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('shortToken', body.accessToken);",
+                  "const decode = (token) => JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                  "const claims = decode(body.accessToken);",
+                  "const lifetime = claims.exp - claims.iat;",
+                  "pm.collectionVariables.set('shortTokenLifetime', lifetime);",
+                  "pm.test('token has iat and exp', () => pm.expect(lifetime).to.be.above(0));",
+                  "if (lifetime > 60) console.warn('Token lifetime is ' + lifetime + 's; start the app with jwt.expiration=10s to run the expiry test');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Short-lived token works before expiry -> 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{shortToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Expired token -> 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const decode = (token) => JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                  "const lifetime = Number(pm.collectionVariables.get('shortTokenLifetime'));",
+                  "if (lifetime <= 60) {",
+                  "  // Wait until 1s after exp so the server rejects the token",
+                  "  const waitMs = decode(pm.collectionVariables.get('shortToken')).exp * 1000 - Date.now() + 1000;",
+                  "  if (waitMs > 0) setTimeout(() => {}, waitMs);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const lifetime = Number(pm.collectionVariables.get('shortTokenLifetime'));",
+                  "if (lifetime > 60) {",
+                  "  pm.test.skip('skipped: token lifetime is ' + lifetime + 's, set jwt.expiration: 10s');",
+                  "} else {",
+                  "  pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{shortToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login with the expired token in the header -> still 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{shortToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          }
+        }
+      ]
     }
   ],
   "auth": {
@@ -1809,8 +2853,16 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Log in as the seeded admin when there is no token yet, so a single request can run on its own",
-          "if (!pm.request.url.getPath().startsWith('/api/auth/') && !pm.collectionVariables.get('accessToken')) {",
+          "// Log in as the seeded admin when there is no token yet or the saved one has expired,",
+          "// so a single request can run on its own and the collection survives a short jwt.expiration",
+          "const tokenExpired = (token) => {",
+          "  try {",
+          "    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+          "    return payload.exp * 1000 < Date.now() + 2000;",
+          "  } catch (e) { return true; }",
+          "};",
+          "const saved = pm.collectionVariables.get('accessToken');",
+          "if (!pm.request.url.getPath().startsWith('/api/auth/') && (!saved || tokenExpired(saved))) {",
           "  pm.sendRequest({",
           "    url: pm.collectionVariables.get('baseUrl') + '/api/auth/login',",
           "    method: 'POST',",

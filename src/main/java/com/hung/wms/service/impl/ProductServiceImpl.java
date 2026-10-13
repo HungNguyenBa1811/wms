@@ -53,7 +53,7 @@ public class ProductServiceImpl implements ProductService {
         }
         if (product.getCategoryId() != null) {
             CategoryEntity category = categoryRepository
-                    .findById(product.getCategoryId())
+                    .findByIdAndIsDeletedFalse(product.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
         }
@@ -72,7 +72,7 @@ public class ProductServiceImpl implements ProductService {
         modelMapper.map(product, productEntity);
         if (product.getCategoryId() != null) {
             CategoryEntity category = categoryRepository
-                    .findById(product.getCategoryId())
+                    .findByIdAndIsDeletedFalse(product.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
         }

@@ -3,6 +3,7 @@ package com.hung.wms.repository;
 import com.hung.wms.repository.entity.InventoryEntity;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,12 +13,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface InventoryRepository extends JpaRepository<InventoryEntity, String> {
+public interface InventoryRepository extends JpaRepository<InventoryEntity, String>,
+                                             JpaSpecificationExecutor<InventoryEntity> {
     List<InventoryEntity> findAll();
     Optional<InventoryEntity> findById(String id);
-    List<InventoryEntity> findByWarehouse_Id(String warehouseId);
-    List<InventoryEntity> findByProduct_Id(String productId);
-    List<InventoryEntity> findByWarehouse_IdAndProduct_Id(String warehouseId, String productId);
     boolean existsByProduct_IdAndQuantityGreaterThan(String productId, Integer quantity);
     boolean existsByWarehouse_IdAndQuantityGreaterThan(String warehouseId, Integer quantity);
 

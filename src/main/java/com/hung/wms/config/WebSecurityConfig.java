@@ -3,6 +3,7 @@ package com.hung.wms.config;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -21,6 +22,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
+    private static final String[] MASTER_DATA = {
+            "/api/categories/**", "/api/products/**", "/api/warehouses/**", "/api/suppliers/**"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
@@ -33,9 +38,16 @@ public class WebSecurityConfig {
                         .requestMatchers("/error").permitAll()
                         // Swagger UI
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Master data (category / product / warehouse / supplier) is written by ADMIN only.
+                        // Reads and the purchase order flow stay open to every logged-in user (STAFF).
+                        // Denied here by AuthorizationFilter -> 403 from the default AccessDeniedHandler (empty body)
+                        .requestMatchers(HttpMethod.POST, MASTER_DATA).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, MASTER_DATA).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, MASTER_DATA).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                // TODO: replace with an entry point that writes ErrorResponse, so 401 matches GlobalExceptionHandler
+                // TODO: replace with an entry point (401) and an AccessDeniedHandler (403) that write ErrorResponse,
+                //  so both match GlobalExceptionHandler
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

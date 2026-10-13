@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.hung.wms.validation.MaxBytes;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,8 +22,11 @@ public class RegisterRequest {
     @Size(max = 255, message = "Email must be at most 255 characters")
     private String email;
 
-    // Bcrypt only uses the first 72 bytes, Spring Security rejects longer passwords
+    // BCrypt accepts at most 72 bytes (not characters) and Spring Security throws on longer input.
+    // @Size counts characters, so a non-ASCII password (e.g. Vietnamese) can pass @Size yet exceed 72 bytes;
+    // @MaxBytes checks the UTF-8 byte length so the encoder never sees an oversized password.
     @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 72, message = "Password must be 8-72 characters")
+    @Size(min = 8, message = "Password must be at least 8 characters")
+    @MaxBytes(value = 72, message = "Password must be at most 72 bytes in UTF-8 (72 ASCII characters, fewer if accented)")
     private String password;
 }

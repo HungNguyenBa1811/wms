@@ -1,13 +1,17 @@
 package com.hung.wms.api;
 
+import com.hung.wms.model.request.stockmovement.StockMovementSearchRequest;
+import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.stockmovement.StockMovementResponse;
 import com.hung.wms.service.StockMovementService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/stock-movements")
@@ -16,9 +20,10 @@ public class StockMovementAPI {
     private StockMovementService stockMovementService;
 
     @GetMapping
-    public ResponseEntity<List<StockMovementResponse>> getStockMovement(@RequestParam(required = false) String warehouseId,
-                                                                        @RequestParam(required = false) String productId) {
-        List<StockMovementResponse> result = stockMovementService.findAllStockMovements(warehouseId, productId);
+    public ResponseEntity<PageResponse<StockMovementResponse>> getStockMovement(
+            @Valid StockMovementSearchRequest stockMovementSearchRequest,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<StockMovementResponse> result = stockMovementService.findAllStockMovements(stockMovementSearchRequest, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 

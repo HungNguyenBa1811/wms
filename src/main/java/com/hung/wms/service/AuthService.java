@@ -7,6 +7,5 @@ import com.hung.wms.model.response.user.UserResponse;
 
 public interface AuthService {
     UserResponse register(RegisterRequest request);
-
     TokenResponse login(LoginRequest request);
 }

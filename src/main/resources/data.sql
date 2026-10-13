@@ -13,11 +13,14 @@ INSERT INTO products (id, product_code, name, description, price, category_id, c
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'SEED-002', 'Office Chair', 'Seeded product', 120.00,
      '22222222-2222-2222-2222-222222222222', NOW());
 
--- Used as receivedBy when receiving a purchase order.
--- Password is BCrypt hash of 'admin' (POST /api/auth/login with admin / admin).
+-- admin is used as receivedBy when receiving a purchase order.
+-- Passwords are BCrypt hashes of the username: login with admin / admin or staff / staff.
+-- ADMIN writes master data; STAFF can only read it and run the purchase order flow.
 INSERT INTO users (id, username, email, password, role, created_at) VALUES
     ('e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1', 'admin', 'admin@example.com',
-     '$2a$10$I9Z5kT14idFN9DUvRxu5f.kGwli1p4sWOB5PmY0P6KS3HrFqt8MBG', 'ADMIN', NOW());
+     '$2a$10$I9Z5kT14idFN9DUvRxu5f.kGwli1p4sWOB5PmY0P6KS3HrFqt8MBG', 'ADMIN', NOW()),
+    ('e2e2e2e2-e2e2-e2e2-e2e2-e2e2e2e2e2e2', 'staff', 'staff@example.com',
+     '$2a$10$5WUCga7f9S1O9NW9wTfKku5wS9w2KNG8lBzinuZJSTOK94722oO7i', 'STAFF', NOW());
 
 INSERT INTO warehouses (id, warehouse_code, name, location, created_at) VALUES
     ('c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1', 'WH-001', 'Main Warehouse', 'Ho Chi Minh City', NOW()),
