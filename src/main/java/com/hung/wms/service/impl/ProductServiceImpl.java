@@ -83,7 +83,6 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> findAllProducts(ProductSearchRequest productSearchRequest, Pageable pageable) {
         Page<ProductEntity> productEntityPage = productRepository.findAll(ProductSpecification.search(productSearchRequest), pageable);
-        // TODO: N+1
         return new PageResponse<>(productEntityPage.map(productConverter::toResponse));
     }
 

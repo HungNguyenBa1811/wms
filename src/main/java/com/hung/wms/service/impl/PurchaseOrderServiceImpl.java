@@ -9,7 +9,6 @@ import com.hung.wms.exception.ResourceNotFoundException;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderSearchRequest;
-import com.hung.wms.model.request.purchaseorder.ReceivePurchaseOrderRequest;
 import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
 import com.hung.wms.repository.InventoryRepository;
@@ -23,10 +22,13 @@ import com.hung.wms.repository.entity.*;
 import com.hung.wms.repository.specification.PurchaseOrderSpecification;
 import com.hung.wms.service.PurchaseOrderService;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,7 +92,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
     @Override
     @Transactional
-    public PurchaseOrderResponse receivePurchaseOrder(String id, ReceivePurchaseOrderRequest request) {
+    public PurchaseOrderResponse receivePurchaseOrder(String id, Principal principal) {
         PurchaseOrderEntity purchaseOrder = purchaseOrderRepository
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
@@ -98,10 +100,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             throw new InvalidStateException("Cannot receive purchase order in status: " + purchaseOrder.getStatus());
         if (purchaseOrder.getPurchaseOrderItems().isEmpty())
             throw new BadRequestException("Cannot receive purchase order without items");
+        String currentUsername = principal.getName();
         UserEntity receivedBy = userRepository
-                .findById(request.getReceivedBy())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getReceivedBy()));
-
+                .findByUsername(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + currentUsername));
         WarehouseEntity warehouse = purchaseOrder.getWarehouse();
         for (PurchaseOrderItemEntity item : purchaseOrder.getPurchaseOrderItems()) {
             ProductEntity product = item.getProduct();
@@ -133,7 +135,6 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     public PageResponse<PurchaseOrderResponse> findAllPurchaseOrders(PurchaseOrderSearchRequest request, Pageable pageable) {
         Page<PurchaseOrderEntity> purchaseOrderEntityPage = purchaseOrderRepository
                 .findAll(PurchaseOrderSpecification.search(request), pageable);
-        // TODO: N+1 (supplier, warehouse, items, product)
         return new PageResponse<>(purchaseOrderEntityPage.map(purchaseOrderConverter::toResponse));
     }
 

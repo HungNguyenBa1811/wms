@@ -2,7 +2,6 @@ package com.hung.wms.concurrency;
 
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
-import com.hung.wms.model.request.purchaseorder.ReceivePurchaseOrderRequest;
 import com.hung.wms.repository.CategoryRepository;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
@@ -14,6 +13,8 @@ import com.hung.wms.repository.entity.InventoryEntity;
 import com.hung.wms.repository.entity.ProductEntity;
 import com.hung.wms.repository.entity.SupplierEntity;
 import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.repository.specification.InventorySpecification;
+import com.hung.wms.repository.specification.StockMovementSpecification;
 import com.hung.wms.service.ProductService;
 import com.hung.wms.service.PurchaseOrderService;
 import com.hung.wms.service.SupplierService;
@@ -22,9 +23,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,7 +54,7 @@ import static org.assertj.core.api.Assertions.fail;
 )
 abstract class ConcurrencyTestSupport {
     protected static final String SEED_CATEGORY_ID = "11111111-1111-1111-1111-111111111111";
-    protected static final String SEED_USER_ID = "e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1";
+    protected static final String SEED_USERNAME = "admin";
 
     // Longer than innodb_lock_wait_timeout (50s) so a stuck lock shows up as a lock timeout, not a test timeout
     private static final long RESULT_TIMEOUT_SECONDS = 60;
@@ -303,9 +306,8 @@ abstract class ConcurrencyTestSupport {
     }
 
     protected void receive(String purchaseOrderId) {
-        ReceivePurchaseOrderRequest request = new ReceivePurchaseOrderRequest();
-        request.setReceivedBy(SEED_USER_ID);
-        purchaseOrderService.receivePurchaseOrder(purchaseOrderId, request);
+        Principal principal = () -> SEED_USERNAME;
+        purchaseOrderService.receivePurchaseOrder(purchaseOrderId, principal);
     }
 
     protected void addItem(String purchaseOrderId, String productId, int quantity) {
@@ -315,13 +317,17 @@ abstract class ConcurrencyTestSupport {
     // ---------- Reads ----------
 
     protected int inventoryQuantity(String warehouseId, String productId) {
-        List<InventoryEntity> rows = inventoryRepository.findByWarehouse_IdAndProduct_Id(warehouseId, productId);
+        List<InventoryEntity> rows = inventoryRepository.findAll(Specification.allOf(
+                InventorySpecification.hasWarehouse(warehouseId),
+                InventorySpecification.hasProduct(productId)));
         assertThat(rows).as("inventory rows for one warehouse + product").hasSizeLessThanOrEqualTo(1);
         return rows.isEmpty() ? 0 : rows.get(0).getQuantity();
     }
 
     protected int stockMovementCount(String warehouseId, String productId) {
-        return stockMovementRepository.findByWarehouse_IdAndProduct_IdOrderByCreatedAtDesc(warehouseId, productId).size();
+        return (int) stockMovementRepository.count(Specification.allOf(
+                StockMovementSpecification.hasWarehouse(warehouseId),
+                StockMovementSpecification.hasProduct(productId)));
     }
 
     protected int itemCount(String purchaseOrderId) {

@@ -3,7 +3,6 @@ package com.hung.wms.api;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
 import com.hung.wms.model.request.purchaseorder.PurchaseOrderSearchRequest;
-import com.hung.wms.model.request.purchaseorder.ReceivePurchaseOrderRequest;
 import com.hung.wms.model.response.common.PageResponse;
 import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
 import com.hung.wms.service.PurchaseOrderService;
@@ -15,6 +14,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/purchase-orders")
@@ -50,9 +51,8 @@ public class PurchaseOrderAPI {
     }
 
     @PostMapping("/{id}/receive")
-    public ResponseEntity<PurchaseOrderResponse> receivePurchaseOrder(@PathVariable String id,
-                                                                      @Valid @RequestBody ReceivePurchaseOrderRequest receivePurchaseOrderRequest) {
-        PurchaseOrderResponse result = purchaseOrderService.receivePurchaseOrder(id, receivePurchaseOrderRequest);
+    public ResponseEntity<PurchaseOrderResponse> receivePurchaseOrder(@PathVariable String id, Principal principal) {
+        PurchaseOrderResponse result = purchaseOrderService.receivePurchaseOrder(id, principal);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 }
