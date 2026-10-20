@@ -50,3 +50,6 @@ Thumbs.db
 CONTEXT.md
 CHECKLIST.md
 xoa-thu-dang-duoc-dung.html
+
+### Claude Code worktrees ###
+.claude/worktrees/

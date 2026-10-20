@@ -70,10 +70,6 @@
       "value": "d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1"
     },
     {
-      "key": "userId",
-      "value": "e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1"
-    },
-    {
       "key": "purchaseOrderId",
       "value": ""
     },
@@ -469,7 +465,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 403', () => pm.response.to.have.status(403));"
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('body has status and message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql(403);",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -507,7 +508,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 403', () => pm.response.to.have.status(403));"
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('body has status and message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql(403);",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -597,7 +603,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('body has status and message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql(401);",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -618,7 +629,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('body has status and message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql(401);",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -659,7 +675,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('body has status and message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql(401);",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -687,7 +708,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 401', () => pm.response.to.have.status(401));"
+                  "pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('body has status and message', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql(401);",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -2254,17 +2280,7 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"receivedBy\": \"{{userId}}\"\n}"
-            }
+            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive"
           }
         },
         {
@@ -2282,17 +2298,7 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"receivedBy\": \"{{userId}}\"\n}"
-            }
+            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive"
           }
         },
         {
@@ -2776,6 +2782,11 @@
                   "  pm.test.skip('skipped: token lifetime is ' + lifetime + 's, set jwt.expiration: 10s');",
                   "} else {",
                   "  pm.test('status is 401', () => pm.response.to.have.status(401));",
+                  "  pm.test('body has status and message', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql(401);",
+                  "    pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "  });",
                   "}"
                 ]
               }

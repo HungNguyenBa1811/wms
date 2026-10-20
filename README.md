@@ -104,7 +104,7 @@ Import file `postman/wms.postman_collection.json` vào Postman. Collection gồm
 
 ## Xác thực và phân quyền
 
-Mọi endpoint ngoài `/api/auth/**` và Swagger đều cần header `Authorization: Bearer <accessToken>`. Thiếu hoặc sai token trả 401, đúng token nhưng không đủ quyền trả 403 (cả hai hiện có body rỗng).
+Mọi endpoint ngoài `/api/auth/**` và Swagger đều cần header `Authorization: Bearer <accessToken>`. Thiếu hoặc sai token trả 401, đúng token nhưng không đủ quyền trả 403. Cả hai trả body `ErrorResponse` giống các lỗi khác (do `SecurityErrorHandler` ghi, vì lỗi sinh ra trong security filter chain nên `GlobalExceptionHandler` không bắt được).
 
 | Method | Endpoint | Mô tả |
 |---|---|---|
@@ -233,12 +233,11 @@ POST /api/purchase-orders/{id}/items
 
 Nhận hàng:
 
-```json
+```http
 POST /api/purchase-orders/{id}/receive
-{
-  "receivedBy": "<userId>"
-}
 ```
+
+Không có body. Người nhận (`receivedBy`) là user đang đăng nhập, lấy từ token, client không tự gửi được.
 
 ### Inventory
 
@@ -275,7 +274,8 @@ PENDING
 - PO đã `RECEIVED` không thể thêm item hay receive lại (409).
 - PO phải có ít nhất một item mới được receive (400).
 - `quantity` phải lớn hơn 0, `unitCost` không được âm (400).
-- Mọi ID từ client (`supplierId`, `warehouseId`, `productId`, `receivedBy`) đều được tra lại trong DB, không tồn tại thì trả về 404.
+- Mọi ID từ client (`supplierId`, `warehouseId`, `productId`) đều được tra lại trong DB, không tồn tại thì trả về 404.
+- `receivedBy` không nhận từ client: lấy theo username trong token của người gọi receive.
 
 ### Transaction và concurrency
 
@@ -304,8 +304,8 @@ Mọi lỗi nghiệp vụ được `GlobalExceptionHandler` chuyển thành resp
 | `ResourceDuplicateException` | 409 | Trùng dữ liệu unique (ví dụ `warehouseCode`, `name` của category) |
 | `ResourceInUseException` | 409 | Xóa resource đang được dùng (category còn product, product / warehouse còn tồn kho, supplier / product trong PO `PENDING`) |
 | `BadCredentialsException` | 401 | Login sai username hoặc password, message luôn là `Invalid username or password` |
-| Thiếu / sai token | 401 | Trả bởi Spring Security trước khi vào controller, body rỗng |
-| Không đủ quyền | 403 | `STAFF` gọi endpoint chỉ dành cho `ADMIN`, body rỗng |
+| Thiếu / sai token | 401 | Trả bởi `SecurityErrorHandler` trước khi vào controller, message `Authentication is required` |
+| Không đủ quyền | 403 | `STAFF` gọi endpoint chỉ dành cho `ADMIN`, message `You do not have permission to access this resource` |
 | Lỗi khác | 500 | Lỗi không lường trước, có ghi log |
 
 ## Cấu trúc project
@@ -331,7 +331,5 @@ Luồng xử lý: `Controller -> Service -> Repository -> Entity`. Business rule
 
 ## Chưa có
 
-- `receivedBy` khi receive PO vẫn gửi trong body, chưa lấy từ token
-- 401 / 403 chưa trả `ErrorResponse` (body rỗng)
 - API quản lý user và đổi role
 - Unit test và integration test
