@@ -2,15 +2,16 @@ package com.hung.wms.concurrency;
 
 import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.InvalidStateException;
+import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
 import com.hung.wms.repository.entity.ProductEntity;
 import com.hung.wms.repository.entity.SupplierEntity;
 import com.hung.wms.repository.entity.WarehouseEntity;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -78,7 +79,9 @@ class PurchaseOrderConcurrencyTest extends ConcurrencyTestSupport {
         assertThat(first.commit()).isNull();
         assertThat(outcome(second)).isNull();
 
+        assertThat(inventoryRowCount(warehouse.getId(), product.getId())).isEqualTo(1);
         assertThat(inventoryQuantity(warehouse.getId(), product.getId())).isEqualTo(1 + 10 + 20);
+        assertThat(stockMovementCount(warehouse.getId(), product.getId())).isEqualTo(3);
     }
 
     @Test
@@ -100,24 +103,72 @@ class PurchaseOrderConcurrencyTest extends ConcurrencyTestSupport {
         assertThat(stockMovementCount(warehouse.getId(), product.getId())).isEqualTo(1 + threads);
     }
 
+    // ---------- Receive khi inventory chưa có (upsert, CHECKLIST mục 1) ----------
+
     @Test
-    @Disabled("Chưa fix (CHECKLIST mục 1): inventory chưa có thì SELECT FOR UPDATE không lock được dòng chưa tồn tại, "
-            + "2 transaction cùng INSERT -> deadlock hoặc trùng unique -> 500. Bỏ @Disabled khi bắt đầu sửa.")
-    @DisplayName("[Chưa fix] Receive 2 PO khác nhau khi inventory chưa có: cả hai phải thành công, tồn kho = tổng")
-    void receiveDifferentPurchaseOrders_inventoryNotCreatedYet_bothSucceed() {
+    @DisplayName("Receive 2 PO khác nhau khi inventory chưa có: PO thứ hai chờ lock dòng vừa INSERT, cả hai thành công, tồn kho = tổng")
+    void receiveDifferentPurchaseOrders_inventoryNotCreatedYet_secondWaitsThenBothSucceed() {
         String poA = newPurchaseOrder(supplier.getId(), warehouse.getId(), product.getId(), 10);
         String poB = newPurchaseOrder(supplier.getId(), warehouse.getId(), product.getId(), 20);
 
         HeldTransaction first = holdTransaction(() -> receive(poA));
         Future<Void> second = async(() -> receive(poB));
 
-        letItRun(second);
-        Throwable firstResult = first.commit();
-        Throwable secondResult = outcome(second);
+        // Before the fix: B found no row to lock, INSERTed too and failed on uk_inventory_warehouse_product (500).
+        // Now B's INSERT ... ON DUPLICATE KEY UPDATE hits A's uncommitted row and waits for A
+        assertBlocked(second);
+        assertThat(first.commit()).as("first receive").isNull();
+        assertThat(outcome(second)).as("second receive").isNull();
 
-        assertThat(firstResult).as("first receive").isNull();
-        assertThat(secondResult).as("second receive").isNull();
+        assertThat(inventoryRowCount(warehouse.getId(), product.getId())).isEqualTo(1);
         assertThat(inventoryQuantity(warehouse.getId(), product.getId())).isEqualTo(30);
+        assertThat(stockMovementCount(warehouse.getId(), product.getId())).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Receive 8 PO khác nhau cùng lúc khi inventory chưa có: tất cả thành công, đúng 1 dòng inventory, tồn kho = tổng")
+    void receiveDifferentPurchaseOrders_inventoryNotCreatedYet_manyThreads_allSucceed() {
+        int threads = 8;
+        List<Runnable> receives = new ArrayList<>();
+        int expected = 0;
+        for (int i = 1; i <= threads; i++) {
+            String po = newPurchaseOrder(supplier.getId(), warehouse.getId(), product.getId(), i);
+            receives.add(() -> receive(po));
+            expected += i;
+        }
+
+        List<Throwable> results = outcomes(runTogether(receives));
+
+        assertThat(results).containsOnlyNulls();
+        assertThat(inventoryRowCount(warehouse.getId(), product.getId())).isEqualTo(1);
+        assertThat(inventoryQuantity(warehouse.getId(), product.getId())).isEqualTo(expected);
+        assertThat(stockMovementCount(warehouse.getId(), product.getId())).isEqualTo(threads);
+    }
+
+    @Test
+    @DisplayName("Receive 8 PO nhiều product, item nhập theo thứ tự ngược nhau, inventory chưa có: không deadlock, tồn kho từng product = tổng")
+    void receiveMultiProductPurchaseOrders_oppositeItemOrder_noDeadlock() {
+        List<ProductEntity> products = List.of(product, newProduct(), newProduct());
+        int threads = 8;
+        List<Runnable> receives = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            List<ProductEntity> order = new ArrayList<>(products);
+            // Half of the POs list the products in reverse order: locking must not follow the item order
+            if (i % 2 == 1) Collections.reverse(order);
+            List<PurchaseOrderItemRequest> items = new ArrayList<>();
+            order.forEach(p -> items.add(itemRequest(p.getId(), 2)));
+            String po = newPurchaseOrder(supplier.getId(), warehouse.getId(), items);
+            receives.add(() -> receive(po));
+        }
+
+        List<Throwable> results = outcomes(runTogether(receives));
+
+        assertThat(results).containsOnlyNulls();
+        for (ProductEntity p : products) {
+            assertThat(inventoryRowCount(warehouse.getId(), p.getId())).isEqualTo(1);
+            assertThat(inventoryQuantity(warehouse.getId(), p.getId())).isEqualTo(2 * threads);
+            assertThat(stockMovementCount(warehouse.getId(), p.getId())).isEqualTo(threads);
+        }
     }
 
     // ---------- Add item (lock PO + check trùng product) ----------

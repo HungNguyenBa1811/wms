@@ -118,21 +118,14 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .findByUsername(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + currentUsername));
         WarehouseEntity warehouse = purchaseOrder.getWarehouse();
-        Map<String, InventoryEntity> inventories = lockInventories(warehouse, purchaseOrder.getPurchaseOrderItems());
-        // No SELECT inside this loop: the INSERT / UPDATE below wait until commit and are sent as JDBC batches
+        // 1 statement for all items: INSERT ... ON DUPLICATE KEY UPDATE adds to the existing row or creates it.
+        // Atomic in MySQL, so two receives creating the same (warehouse, product) row at the same time no longer
+        // fail on the unique key, and two receives adding to the same row cannot lose an update.
+        inventoryRepository.addQuantities(warehouse.getId(), quantityByProduct(purchaseOrder.getPurchaseOrderItems()));
+        // No SELECT inside this loop: the stock movement INSERTs wait until commit and are sent as 1 JDBC batch
         for (PurchaseOrderItemEntity item : purchaseOrder.getPurchaseOrderItems()) {
-            ProductEntity product = item.getProduct();
-
-            // Row missing (first receive of this product into this warehouse): nothing to lock, a new row is inserted.
-            // Two receives doing this at the same time still race on the unique key (CHECKLIST section 1).
-            InventoryEntity inventory = inventories.get(product.getId());
-            if (inventory == null)
-                inventory = newInventory(warehouse, product);
-            inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
-            inventoryRepository.save(inventory);
-
             stockMovementRepository.save(stockMovementConverter.toEntity(
-                    product, warehouse, receivedBy, MovementType.IN, item.getQuantity(),
+                    item.getProduct(), warehouse, receivedBy, MovementType.IN, item.getQuantity(),
                     "Receive purchase order " + purchaseOrder.getId()));
         }
 
@@ -185,20 +178,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .collect(Collectors.toMap(ProductEntity::getId, Function.identity()));
     }
 
-    // 1 SELECT ... FOR UPDATE for all inventory rows the PO touches, keyed by product id
-    private Map<String, InventoryEntity> lockInventories(WarehouseEntity warehouse, List<PurchaseOrderItemEntity> items) {
-        Set<String> productIds = items.stream()
-                .map(item -> item.getProduct().getId())
-                .collect(Collectors.toSet());
-        return inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(warehouse.getId(), productIds).stream()
-                .collect(Collectors.toMap(inventory -> inventory.getProduct().getId(), Function.identity()));
-    }
-
-    private InventoryEntity newInventory(WarehouseEntity warehouse, ProductEntity product) {
-        InventoryEntity inventory = new InventoryEntity();
-        inventory.setWarehouse(warehouse);
-        inventory.setProduct(product);
-        inventory.setQuantity(0);
-        return inventory;
+    // Product id -> quantity to add. A PO never has the same product twice (addItem rejects it), Integer::sum is just a safe merge
+    private Map<String, Integer> quantityByProduct(List<PurchaseOrderItemEntity> items) {
+        return items.stream()
+                .collect(Collectors.toMap(item -> item.getProduct().getId(), PurchaseOrderItemEntity::getQuantity, Integer::sum));
     }
 }

@@ -316,9 +316,25 @@ PENDING
 
 Receive PO thay đổi nhiều bảng (inventory, stock_movements, purchase_orders), nên toàn bộ chạy trong một `@Transactional`: thành công hết hoặc rollback hết.
 
-PO và Inventory được đọc bằng `PESSIMISTIC_WRITE` lock. Khi hai request cùng cộng tồn kho cho một sản phẩm trong một kho, request sau phải chờ request trước commit, tránh trường hợp cả hai cùng đọc giá trị cũ rồi ghi đè lên nhau.
+PO được đọc bằng `PESSIMISTIC_WRITE` lock, nên hai request receive cùng một PO chạy lần lượt và request sau nhận 409.
 
-Receive lock tất cả dòng inventory của PO bằng **1 query** (`product_id IN (...) ORDER BY product_id FOR UPDATE`), tạo PO lock tất cả product của request bằng 1 query (`id IN (...) ORDER BY id FOR UPDATE`). Sắp theo id để mọi transaction lock theo cùng thứ tự, tránh deadlock. Sau khi lock xong không còn SELECT nào nữa, nên INSERT / UPDATE (inventory, stock movement, item) được gửi thành JDBC batch lúc commit.
+Receive cộng tồn kho cho mọi item của PO bằng **1 câu upsert** (`InventoryRepositoryCustomImpl.addQuantities`):
+
+```sql
+INSERT INTO inventory (id, warehouse_id, product_id, quantity, updated_at)
+VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), ...
+AS incoming
+ON DUPLICATE KEY UPDATE quantity = inventory.quantity + incoming.quantity, updated_at = incoming.updated_at
+```
+
+- Dòng inventory `(warehouse_id, product_id)` chưa có thì được tạo, có rồi thì cộng thêm. MySQL tự kiểm tra unique key `uk_inventory_warehouse_product`: transaction đầu INSERT dòng mới, transaction sau gặp trùng key thì chờ lock của dòng đó rồi cộng vào giá trị mới nhất. Không lost update, không trùng dòng, không lỗi 500.
+- Cách cũ (`SELECT ... FOR UPDATE` rồi INSERT nếu chưa có) bị race khi dòng inventory chưa tồn tại: không có dòng để lock, hai transaction cùng INSERT và MySQL báo deadlock (gap lock) hoặc trùng unique.
+- Các dòng VALUES được sắp theo `product_id`, nên mọi transaction lock theo cùng thứ tự, tránh deadlock khi hai PO nhiều item cùng chạm các product giống nhau.
+- Là native SQL nên `id` (UUID) và `updated_at` được tạo trong Java, không qua `@GeneratedValue` / `@UpdateTimestamp`. Cú pháp `AS incoming` cần MySQL 8.0.19 trở lên (`VALUES(col)` đã deprecated).
+
+Tạo PO lock tất cả product của request bằng 1 query (`id IN (...) ORDER BY id FOR UPDATE`), sắp theo id cùng lý do trên. Sau khi lock xong không còn SELECT nào nữa, nên các INSERT / UPDATE còn lại (stock movement, item, PO) được gửi thành JDBC batch lúc commit.
+
+Test concurrency (`./mvnw test -Pmysql-tests`, cần MySQL thật) chạy nhiều thread receive cùng lúc, cả khi inventory đã có lẫn chưa có, và kiểm tra tồn kho = tổng, đúng 1 dòng inventory, đủ stock movement.
 
 ## Xử lý lỗi
 

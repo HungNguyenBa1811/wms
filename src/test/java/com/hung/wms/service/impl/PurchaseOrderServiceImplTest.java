@@ -17,7 +17,6 @@ import com.hung.wms.repository.StockMovementRepository;
 import com.hung.wms.repository.SupplierRepository;
 import com.hung.wms.repository.UserRepository;
 import com.hung.wms.repository.WarehouseRepository;
-import com.hung.wms.repository.entity.InventoryEntity;
 import com.hung.wms.repository.entity.ProductEntity;
 import com.hung.wms.repository.entity.PurchaseOrderEntity;
 import com.hung.wms.repository.entity.PurchaseOrderItemEntity;
@@ -44,6 +43,7 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,6 +56,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -389,53 +390,24 @@ class PurchaseOrderServiceImplTest {
         }
 
         @Test
-        @DisplayName("inventory đã có -> cộng thêm quantity của item")
-        void addsToExistingInventory() {
+        @DisplayName("cộng inventory bằng 1 lần upsert cho mọi item (tạo mới nếu chưa có), không đọc / lock inventory trước")
+        void addsAllQuantitiesInOneUpsert() {
             // given
             WarehouseEntity warehouse = warehouse();
-            ProductEntity productA = product(PRODUCT_A);
             PurchaseOrderEntity po = purchaseOrder(PurchaseOrderStatus.PENDING);
             po.setWarehouse(warehouse);
-            po.getPurchaseOrderItems().add(item(po, productA, 5));
-            InventoryEntity inventory = inventory(warehouse, productA, 10);
+            po.getPurchaseOrderItems().add(item(po, product(PRODUCT_A), 5));
+            po.getPurchaseOrderItems().add(item(po, product(PRODUCT_B), 2));
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A)))
-                    .thenReturn(List.of(inventory));
 
             // when
             purchaseOrderService.receivePurchaseOrder(PO_ID, principal);
 
             // then
-            assertThat(inventory.getQuantity()).isEqualTo(15);
-            verify(inventoryRepository).save(inventory);
-        }
-
-        @Test
-        @DisplayName("inventory chưa có -> tạo mới từ 0 rồi cộng quantity")
-        void createsInventoryWhenMissing() {
-            // given
-            WarehouseEntity warehouse = warehouse();
-            ProductEntity productA = product(PRODUCT_A);
-            PurchaseOrderEntity po = purchaseOrder(PurchaseOrderStatus.PENDING);
-            po.setWarehouse(warehouse);
-            po.getPurchaseOrderItems().add(item(po, productA, 5));
-            when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
-            when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A)))
-                    .thenReturn(List.of());
-
-            // when
-            purchaseOrderService.receivePurchaseOrder(PO_ID, principal);
-
-            // then
-            ArgumentCaptor<InventoryEntity> saved = ArgumentCaptor.forClass(InventoryEntity.class);
-            verify(inventoryRepository).save(saved.capture());
-            InventoryEntity created = saved.getValue();
-            assertThat(created.getId()).isNull();
-            assertThat(created.getWarehouse()).isSameAs(warehouse);
-            assertThat(created.getProduct()).isSameAs(productA);
-            assertThat(created.getQuantity()).isEqualTo(5);
+            // Existing row or not is decided by MySQL (INSERT ... ON DUPLICATE KEY UPDATE), see PurchaseOrderConcurrencyTest
+            verify(inventoryRepository).addQuantities(WAREHOUSE_ID, Map.of(PRODUCT_A, 5, PRODUCT_B, 2));
+            verifyNoMoreInteractions(inventoryRepository);
         }
 
         @Test
@@ -452,9 +424,6 @@ class PurchaseOrderServiceImplTest {
             po.getPurchaseOrderItems().add(item(po, productB, 2));
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
-            // 1 locking query for both items, not 1 per item
-            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A, PRODUCT_B)))
-                    .thenReturn(List.of());
 
             // when
             purchaseOrderService.receivePurchaseOrder(PO_ID, principal);
@@ -471,8 +440,7 @@ class PurchaseOrderServiceImplTest {
             });
             assertThat(saved).extracting(StockMovementEntity::getProduct).containsExactly(productA, productB);
             assertThat(saved).extracting(StockMovementEntity::getQuantity).containsExactly(5, 2);
-            verify(inventoryRepository, times(2)).save(any(InventoryEntity.class));
-            verify(inventoryRepository, times(1)).findAllByWarehouseIdAndProductIdInForUpdate(anyString(), any());
+            verify(inventoryRepository, times(1)).addQuantities(anyString(), any());
         }
 
         @Test
@@ -484,8 +452,6 @@ class PurchaseOrderServiceImplTest {
             po.getPurchaseOrderItems().add(item(po, product(PRODUCT_A), 5));
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
-            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A)))
-                    .thenReturn(List.of());
             LocalDateTime before = LocalDateTime.now();
 
             // when
@@ -577,15 +543,6 @@ class PurchaseOrderServiceImplTest {
         item.setQuantity(quantity);
         item.setUnitCost(BigDecimal.ONE);
         return item;
-    }
-
-    private static InventoryEntity inventory(WarehouseEntity warehouse, ProductEntity product, int quantity) {
-        InventoryEntity inventory = new InventoryEntity();
-        inventory.setId("inventory-1");
-        inventory.setWarehouse(warehouse);
-        inventory.setProduct(product);
-        inventory.setQuantity(quantity);
-        return inventory;
     }
 
     private static PurchaseOrderItemRequest itemRequest(String productId, int quantity, String unitCost) {

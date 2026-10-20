@@ -287,6 +287,12 @@ abstract class ConcurrencyTestSupport {
         return purchaseOrderService.createPurchaseOrder(purchaseOrderRequest(supplierId, warehouseId, productId, quantity)).getId();
     }
 
+    protected String newPurchaseOrder(String supplierId, String warehouseId, List<PurchaseOrderItemRequest> items) {
+        PurchaseOrderRequest request = purchaseOrderRequest(supplierId, warehouseId, null, 0);
+        request.getItems().addAll(items);
+        return purchaseOrderService.createPurchaseOrder(request).getId();
+    }
+
     protected String newEmptyPurchaseOrder(String supplierId, String warehouseId) {
         return purchaseOrderService.createPurchaseOrder(purchaseOrderRequest(supplierId, warehouseId, null, 0)).getId();
     }
@@ -325,6 +331,12 @@ abstract class ConcurrencyTestSupport {
                 InventorySpecification.hasProduct(productId)));
         assertThat(rows).as("inventory rows for one warehouse + product").hasSizeLessThanOrEqualTo(1);
         return rows.isEmpty() ? 0 : rows.get(0).getQuantity();
+    }
+
+    protected int inventoryRowCount(String warehouseId, String productId) {
+        return (int) inventoryRepository.count(Specification.allOf(
+                InventorySpecification.hasWarehouse(warehouseId),
+                InventorySpecification.hasProduct(productId)));
     }
 
     protected int stockMovementCount(String warehouseId, String productId) {
