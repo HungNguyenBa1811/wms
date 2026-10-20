@@ -1,0 +1,29 @@
+# Profile "test": in-memory H2 (MySQL mode) so ./mvnw test runs without MySQL.
+# Activated with @ActiveProfiles("test"); it replaces profiles.active=uat from application.yaml.
+spring:
+  datasource:
+    url: jdbc:h2:mem:wms;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+
+  sql:
+    init:
+      # data.sql uses MySQL-only syntax (NOW() - INTERVAL n DAY), tests build their own data
+      mode: never
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        generate_statistics: false
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: warn
+
+jwt:
+  # Dummy key for tests only (Base64 of 64 bytes), never use it outside tests
+  secret: dGVzdC1vbmx5LWp3dC1zZWNyZXQtZm9yLXdtcy11bml0LXRlc3RzLW5vdC1mb3ItcHJvZHVjdGlvbi11c2UhIQ==
+  expiration: 1h
