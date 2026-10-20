@@ -11,7 +11,7 @@ public class WarehouseSpecification {
     public static Specification<WarehouseEntity> search(WarehouseSearchRequest request) {
         return Specification.allOf(
                 notDeleted(),
-                warehouseCodeContains(request.getWarehouseCode()),
+                warehouseCodeStartsWith(request.getWarehouseCode()),
                 nameContains(request.getName()),
                 locationContains(request.getLocation())
         );
@@ -21,18 +21,19 @@ public class WarehouseSpecification {
         return (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
     }
 
-    public static Specification<WarehouseEntity> warehouseCodeContains(String warehouseCode) {
+    // Prefix search: "WH" matches "WH-001" but "001" does not. Uses the unique index on the code column
+    public static Specification<WarehouseEntity> warehouseCodeStartsWith(String warehouseCode) {
         if (warehouseCode == null || warehouseCode.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("warehouseCode")), "%" + warehouseCode.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("warehouseCode"), LikePattern.startsWith(warehouseCode), LikePattern.ESCAPE);
     }
 
     public static Specification<WarehouseEntity> nameContains(String name) {
         if (name == null || name.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("name"), LikePattern.contains(name), LikePattern.ESCAPE);
     }
 
     public static Specification<WarehouseEntity> locationContains(String location) {
         if (location == null || location.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("location")), "%" + location.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("location"), LikePattern.contains(location), LikePattern.ESCAPE);
     }
 }

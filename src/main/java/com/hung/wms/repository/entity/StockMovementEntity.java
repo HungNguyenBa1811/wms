@@ -14,7 +14,9 @@ import java.time.LocalDateTime;
         name = "stock_movements",
         indexes = {
                 @Index(name = "idx_stock_movement_warehouse_product_created", columnList = "warehouse_id, product_id, created_at"),
-                @Index(name = "idx_stock_movement_product_created", columnList = "product_id, created_at")
+                @Index(name = "idx_stock_movement_product_created", columnList = "product_id, created_at"),
+                // GET /stock-movements without filter: ORDER BY created_at DESC LIMIT n
+                @Index(name = "idx_stock_movement_created", columnList = "created_at")
         }
 )
 public class StockMovementEntity {

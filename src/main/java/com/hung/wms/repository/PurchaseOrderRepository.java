@@ -20,6 +20,8 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrderEnti
     Page<PurchaseOrderEntity> findAll(Specification<PurchaseOrderEntity> spec, Pageable pageable);
 
     List<PurchaseOrderEntity> findAll();
+    // GET /purchase-orders/{id}: PO + receivedBy + items in 1 query instead of 3
+    @EntityGraph(attributePaths = {"purchaseOrderItems", "receivedBy"})
     Optional<PurchaseOrderEntity> findById(String id);
     boolean existsBySupplier_IdAndStatus(String supplierId, PurchaseOrderStatus status);
     boolean existsByWarehouse_IdAndStatus(String warehouseId, PurchaseOrderStatus status);

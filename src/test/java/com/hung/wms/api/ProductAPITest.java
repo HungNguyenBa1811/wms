@@ -224,6 +224,36 @@ class ProductAPITest extends ApiSliceTestSupport {
     }
 
     @Test
+    @DisplayName("token hợp lệ: role lấy từ claim, filter không tra bảng users (không gọi UserDetailsService)")
+    void validTokenUsesRoleClaim() throws Exception {
+        // given
+        when(jwtService.extractUsername("staff.token")).thenReturn("staff");
+        when(jwtService.extractRole("staff.token")).thenReturn("STAFF");
+
+        // when / then: STAFF đọc được, ghi dữ liệu nền bị 403 theo role trong token
+        mockMvc.perform(get("/api/products").header("Authorization", "Bearer staff.token"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/products").header("Authorization", "Bearer staff.token")
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(userDetailsService);
+    }
+
+    @Test
+    @DisplayName("token cũ không có claim role -> 401, phải đăng nhập lại")
+    void tokenWithoutRoleClaim() throws Exception {
+        // given
+        when(jwtService.extractUsername("old.token")).thenReturn("staff");
+        when(jwtService.extractRole("old.token")).thenReturn(null);
+
+        // when / then
+        mockMvc.perform(get("/api/products").header("Authorization", "Bearer old.token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Authentication is required"));
+        verifyNoInteractions(productService, userDetailsService);
+    }
+
+    @Test
     @WithMockUser(roles = "STAFF")
     @DisplayName("STAFF ghi dữ liệu nền -> 403 ErrorResponse")
     void staffCannotCreate() throws Exception {

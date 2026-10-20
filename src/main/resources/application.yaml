@@ -8,5 +8,18 @@ spring:
   profiles:
     active: uat
 
+  jpa:
+    # No lazy loading in the view layer: every query runs inside the service transaction.
+    # Also removes the startup warning "spring.jpa.open-in-view is enabled by default".
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # Group INSERT / UPDATE flushed together into JDBC batches (ids are UUIDs generated in the app,
+          # so INSERT can be batched). Used by create PO (items) and receive PO (inventory + stock movements)
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
 jwt:
   expiration: 10d

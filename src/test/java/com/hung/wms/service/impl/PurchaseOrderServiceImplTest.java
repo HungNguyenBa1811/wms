@@ -45,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -125,8 +126,9 @@ class PurchaseOrderServiceImplTest {
             ProductEntity productB = product(PRODUCT_B);
             when(supplierRepository.findByIdAndIsDeletedFalse(SUPPLIER_ID)).thenReturn(Optional.of(supplier));
             when(warehouseRepository.findByIdAndIsDeletedFalse(WAREHOUSE_ID)).thenReturn(Optional.of(warehouse));
-            when(productRepository.findByIdAndIsDeletedFalseForUpdate(PRODUCT_A)).thenReturn(Optional.of(productA));
-            when(productRepository.findByIdAndIsDeletedFalseForUpdate(PRODUCT_B)).thenReturn(Optional.of(productB));
+            // 1 locking query for all products of the request
+            when(productRepository.findAllByIdInAndIsDeletedFalseForUpdate(Set.of(PRODUCT_A, PRODUCT_B)))
+                    .thenReturn(List.of(productA, productB));
             PurchaseOrderRequest request = poRequest(itemRequest(PRODUCT_A, 5, "10.00"), itemRequest(PRODUCT_B, 3, "2.50"));
 
             // when
@@ -187,7 +189,7 @@ class PurchaseOrderServiceImplTest {
             // given
             when(supplierRepository.findByIdAndIsDeletedFalse(SUPPLIER_ID)).thenReturn(Optional.of(supplier()));
             when(warehouseRepository.findByIdAndIsDeletedFalse(WAREHOUSE_ID)).thenReturn(Optional.of(warehouse()));
-            when(productRepository.findByIdAndIsDeletedFalseForUpdate(PRODUCT_A)).thenReturn(Optional.empty());
+            when(productRepository.findAllByIdInAndIsDeletedFalseForUpdate(Set.of(PRODUCT_A))).thenReturn(List.of());
             PurchaseOrderRequest request = poRequest(itemRequest(PRODUCT_A, 1, "1.00"));
 
             // when / then
@@ -204,14 +206,16 @@ class PurchaseOrderServiceImplTest {
             // given
             when(supplierRepository.findByIdAndIsDeletedFalse(SUPPLIER_ID)).thenReturn(Optional.of(supplier()));
             when(warehouseRepository.findByIdAndIsDeletedFalse(WAREHOUSE_ID)).thenReturn(Optional.of(warehouse()));
-            when(productRepository.findByIdAndIsDeletedFalseForUpdate(PRODUCT_A)).thenReturn(Optional.of(product(PRODUCT_A)));
+            when(productRepository.findAllByIdInAndIsDeletedFalseForUpdate(Set.of(PRODUCT_A)))
+                    .thenReturn(List.of(product(PRODUCT_A)));
             PurchaseOrderRequest request = poRequest(itemRequest(PRODUCT_A, 1, "1.00"), itemRequest(PRODUCT_A, 2, "1.00"));
 
             // when / then
             assertThatThrownBy(() -> purchaseOrderService.createPurchaseOrder(request))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessage("Product already exists in this purchase order");
-            verify(productRepository, times(1)).findByIdAndIsDeletedFalseForUpdate(PRODUCT_A);
+            verify(productRepository, times(1)).findAllByIdInAndIsDeletedFalseForUpdate(Set.of(PRODUCT_A));
+            verify(productRepository, never()).findByIdAndIsDeletedFalseForUpdate(anyString());
             verify(purchaseOrderRepository, never()).save(any());
         }
     }
@@ -396,8 +400,8 @@ class PurchaseOrderServiceImplTest {
             InventoryEntity inventory = inventory(warehouse, productA, 10);
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(inventoryRepository.findByWarehouseIdAndProductIdForUpdate(WAREHOUSE_ID, PRODUCT_A))
-                    .thenReturn(Optional.of(inventory));
+            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A)))
+                    .thenReturn(List.of(inventory));
 
             // when
             purchaseOrderService.receivePurchaseOrder(PO_ID, principal);
@@ -418,8 +422,8 @@ class PurchaseOrderServiceImplTest {
             po.getPurchaseOrderItems().add(item(po, productA, 5));
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user()));
-            when(inventoryRepository.findByWarehouseIdAndProductIdForUpdate(WAREHOUSE_ID, PRODUCT_A))
-                    .thenReturn(Optional.empty());
+            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A)))
+                    .thenReturn(List.of());
 
             // when
             purchaseOrderService.receivePurchaseOrder(PO_ID, principal);
@@ -448,8 +452,9 @@ class PurchaseOrderServiceImplTest {
             po.getPurchaseOrderItems().add(item(po, productB, 2));
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
-            when(inventoryRepository.findByWarehouseIdAndProductIdForUpdate(anyString(), anyString()))
-                    .thenReturn(Optional.empty());
+            // 1 locking query for both items, not 1 per item
+            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A, PRODUCT_B)))
+                    .thenReturn(List.of());
 
             // when
             purchaseOrderService.receivePurchaseOrder(PO_ID, principal);
@@ -467,6 +472,7 @@ class PurchaseOrderServiceImplTest {
             assertThat(saved).extracting(StockMovementEntity::getProduct).containsExactly(productA, productB);
             assertThat(saved).extracting(StockMovementEntity::getQuantity).containsExactly(5, 2);
             verify(inventoryRepository, times(2)).save(any(InventoryEntity.class));
+            verify(inventoryRepository, times(1)).findAllByWarehouseIdAndProductIdInForUpdate(anyString(), any());
         }
 
         @Test
@@ -478,8 +484,8 @@ class PurchaseOrderServiceImplTest {
             po.getPurchaseOrderItems().add(item(po, product(PRODUCT_A), 5));
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID)).thenReturn(Optional.of(po));
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
-            when(inventoryRepository.findByWarehouseIdAndProductIdForUpdate(WAREHOUSE_ID, PRODUCT_A))
-                    .thenReturn(Optional.empty());
+            when(inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(WAREHOUSE_ID, Set.of(PRODUCT_A)))
+                    .thenReturn(List.of());
             LocalDateTime before = LocalDateTime.now();
 
             // when

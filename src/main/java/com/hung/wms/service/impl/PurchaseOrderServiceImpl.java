@@ -25,6 +25,13 @@ import com.hung.wms.service.PurchaseOrderService;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -76,8 +83,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         purchaseOrder.setSupplier(supplier);
         purchaseOrder.setWarehouse(warehouse);
         purchaseOrder.setStatus(PurchaseOrderStatus.PENDING);
+        Map<String, ProductEntity> products = lockProducts(request.getItems());
         for (PurchaseOrderItemRequest itemRequest : request.getItems()) {
-            addItem(purchaseOrder, itemRequest);
+            addItem(purchaseOrder, itemRequest, () -> Optional.ofNullable(products.get(itemRequest.getProductId())));
         }
         return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
@@ -90,7 +98,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
         if (purchaseOrder.getStatus() != PurchaseOrderStatus.PENDING)
             throw new InvalidStateException("Cannot add item to purchase order in status: " + purchaseOrder.getStatus());
-        addItem(purchaseOrder, request);
+        addItem(purchaseOrder, request,
+                () -> productRepository.findByIdAndIsDeletedFalseForUpdate(request.getProductId()));
         return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
 
@@ -109,12 +118,16 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .findByUsername(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + currentUsername));
         WarehouseEntity warehouse = purchaseOrder.getWarehouse();
+        Map<String, InventoryEntity> inventories = lockInventories(warehouse, purchaseOrder.getPurchaseOrderItems());
+        // No SELECT inside this loop: the INSERT / UPDATE below wait until commit and are sent as JDBC batches
         for (PurchaseOrderItemEntity item : purchaseOrder.getPurchaseOrderItems()) {
             ProductEntity product = item.getProduct();
 
-            InventoryEntity inventory = inventoryRepository
-                    .findByWarehouseIdAndProductIdForUpdate(warehouse.getId(), product.getId())
-                    .orElseGet(() -> newInventory(warehouse, product));
+            // Row missing (first receive of this product into this warehouse): nothing to lock, a new row is inserted.
+            // Two receives doing this at the same time still race on the unique key (CHECKLIST section 1).
+            InventoryEntity inventory = inventories.get(product.getId());
+            if (inventory == null)
+                inventory = newInventory(warehouse, product);
             inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
             inventoryRepository.save(inventory);
 
@@ -146,18 +159,39 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return purchaseOrderConverter.toResponse(purchaseOrder);
     }
 
-    private void addItem(PurchaseOrderEntity purchaseOrder, PurchaseOrderItemRequest request) {
+    // productLookup is only called after the duplicate check, so a duplicate still fails with 400 before any 404
+    private void addItem(PurchaseOrderEntity purchaseOrder, PurchaseOrderItemRequest request,
+                         Supplier<Optional<ProductEntity>> productLookup) {
         if (purchaseOrder.getPurchaseOrderItems().stream()
                 .anyMatch(item -> item.getProduct().getId().equals(request.getProductId())))
             throw new BadRequestException("Product already exists in this purchase order");
 
         PurchaseOrderItemEntity item = purchaseOrderConverter.toItemEntity(request);
-        ProductEntity product = productRepository
-                .findByIdAndIsDeletedFalseForUpdate(request.getProductId())
+        ProductEntity product = productLookup.get()
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
         item.setProduct(product);
         item.setPurchaseOrder(purchaseOrder);
         purchaseOrder.getPurchaseOrderItems().add(item);
+    }
+
+    // 1 SELECT ... FOR UPDATE for all products of the request. A missing / soft-deleted product is simply
+    // absent from the map, addItem then throws the same 404 as before.
+    private Map<String, ProductEntity> lockProducts(List<PurchaseOrderItemRequest> items) {
+        Set<String> productIds = items.stream()
+                .map(PurchaseOrderItemRequest::getProductId)
+                .collect(Collectors.toSet());
+        if (productIds.isEmpty()) return Map.of();
+        return productRepository.findAllByIdInAndIsDeletedFalseForUpdate(productIds).stream()
+                .collect(Collectors.toMap(ProductEntity::getId, Function.identity()));
+    }
+
+    // 1 SELECT ... FOR UPDATE for all inventory rows the PO touches, keyed by product id
+    private Map<String, InventoryEntity> lockInventories(WarehouseEntity warehouse, List<PurchaseOrderItemEntity> items) {
+        Set<String> productIds = items.stream()
+                .map(item -> item.getProduct().getId())
+                .collect(Collectors.toSet());
+        return inventoryRepository.findAllByWarehouseIdAndProductIdInForUpdate(warehouse.getId(), productIds).stream()
+                .collect(Collectors.toMap(inventory -> inventory.getProduct().getId(), Function.identity()));
     }
 
     private InventoryEntity newInventory(WarehouseEntity warehouse, ProductEntity product) {

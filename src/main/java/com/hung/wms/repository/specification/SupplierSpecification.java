@@ -24,21 +24,21 @@ public class SupplierSpecification {
 
     public static Specification<SupplierEntity> nameContains(String name) {
         if (name == null || name.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("name"), LikePattern.contains(name), LikePattern.ESCAPE);
     }
 
     public static Specification<SupplierEntity> phoneContains(String phone) {
         if (phone == null || phone.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(root.get("phone"), "%" + phone.trim() + "%");
+        return (root, query, cb) -> cb.like(root.get("phone"), LikePattern.contains(phone), LikePattern.ESCAPE);
     }
 
     public static Specification<SupplierEntity> emailContains(String email) {
         if (email == null || email.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("email")), "%" + email.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("email"), LikePattern.contains(email), LikePattern.ESCAPE);
     }
 
     public static Specification<SupplierEntity> addressContains(String address) {
         if (address == null || address.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("address")), "%" + address.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("address"), LikePattern.contains(address), LikePattern.ESCAPE);
     }
 }

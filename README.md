@@ -69,6 +69,13 @@ Backend quản lý kho viết bằng Spring Boot. Project tập trung vào busin
 
    File `application-uat.yaml` đã nằm trong `.gitignore`, không bị commit lên repo. Thời hạn token đặt ở `jwt.expiration` trong `application.yaml` (mặc định `10d`).
 
+   File mẫu còn có `spring.datasource.hikari.data-source-properties.rewriteBatchedStatements: true`: driver MySQL gộp 1 JDBC batch thành 1 câu INSERT nhiều dòng. Nên giữ, thiếu cờ này thì batch của Hibernate vẫn chạy nhưng driver gửi từng câu một.
+
+   Cấu hình chung trong `application.yaml`:
+
+   - `spring.jpa.open-in-view: false`: mọi query chạy trong transaction của service, không lazy load ở tầng controller / JSON
+   - `hibernate.jdbc.batch_size: 50`, `order_inserts`, `order_updates`: INSERT / UPDATE được gom thành JDBC batch khi flush (dùng ở tạo PO và receive)
+
 4. Chạy ứng dụng
 
    ```bash
@@ -133,7 +140,13 @@ Có 2 role, lưu trong cột `role` của bảng `users`:
 | Tạo / sửa / xóa category, product, warehouse, supplier | x | - |
 | Tạo purchase order, thêm item, receive | x | x |
 
-Quy tắc nằm trong `WebSecurityConfig`: POST / PUT / DELETE lên 4 nhóm dữ liệu nền yêu cầu `hasRole("ADMIN")`, các request còn lại chỉ cần đăng nhập. Muốn nâng một user lên `ADMIN` thì sửa trực tiếp cột `role` trong DB, chưa có API.
+Quy tắc nằm trong `WebSecurityConfig`: POST / PUT / DELETE lên 4 nhóm dữ liệu nền yêu cầu `hasRole("ADMIN")`, các request còn lại chỉ cần đăng nhập. Muốn nâng một user lên `ADMIN` thì sửa trực tiếp cột `role` trong DB, chưa có API, rồi user đó phải đăng nhập lại (xem dưới).
+
+Role nằm trong token: khi login, server ghi username (`sub`) và role (claim `role`) vào JWT. Mỗi request, `JwtAuthenticationFilter` chỉ verify chữ ký + hạn của token rồi lấy username và role từ đó, **không query bảng `users`**. Đánh đổi:
+
+- Đổi role trong DB chỉ có hiệu lực khi user đăng nhập lại để lấy token mới. Token cũ vẫn mang role cũ cho tới khi hết hạn (`jwt.expiration`, mặc định 10 ngày)
+- Tương tự, user bị xóa khỏi DB vẫn dùng được token cũ tới khi hết hạn (hiện chưa có API xóa user)
+- Token phát ra trước khi có claim `role` bị coi là không hợp lệ (401), chỉ cần đăng nhập lại
 
 Swagger UI: `http://localhost:8081/swagger-ui.html`, bấm Authorize và dán `accessToken` để gọi thử các endpoint cần token.
 
@@ -155,7 +168,15 @@ Mọi endpoint GET danh sách đều trả về `PageResponse`:
 }
 ```
 
-Query param chung: `page` (bắt đầu từ 0), `size` (mặc định 20), `sort=field,asc|desc` (có thể lặp nhiều lần). `sort` theo field không tồn tại trả về 400. Filter theo id là so khớp chính xác, filter theo text là tìm "chứa", không phân biệt hoa thường.
+Query param chung: `page` (bắt đầu từ 0), `size` (mặc định 20), `sort=field,asc|desc` (có thể lặp nhiều lần). `sort` theo field không tồn tại trả về 400.
+
+Cách so khớp filter:
+
+- Filter theo id, enum, giá: so khớp chính xác / theo khoảng
+- `productCode`, `warehouseCode`: tìm theo **tiền tố** (`productCode=SEED` khớp `SEED-001`, `productCode=001` không khớp). Nhờ vậy MySQL dùng được unique index của cột mã
+- Các filter text còn lại (`name`, `description`, `location`, `phone`, `email`, `address`): tìm "chứa"
+- Không phân biệt hoa thường và không phân biệt dấu (`ha noi` khớp `Hà Nội`): dựa vào collation mặc định của MySQL `utf8mb4_0900_ai_ci`, không dùng `lower()`
+- Ký tự `%` và `_` trong giá trị filter được hiểu đúng nghĩa đen, không phải wildcard
 
 | Endpoint | Filter | Sort mặc định |
 |---|---|---|
@@ -296,6 +317,8 @@ PENDING
 Receive PO thay đổi nhiều bảng (inventory, stock_movements, purchase_orders), nên toàn bộ chạy trong một `@Transactional`: thành công hết hoặc rollback hết.
 
 PO và Inventory được đọc bằng `PESSIMISTIC_WRITE` lock. Khi hai request cùng cộng tồn kho cho một sản phẩm trong một kho, request sau phải chờ request trước commit, tránh trường hợp cả hai cùng đọc giá trị cũ rồi ghi đè lên nhau.
+
+Receive lock tất cả dòng inventory của PO bằng **1 query** (`product_id IN (...) ORDER BY product_id FOR UPDATE`), tạo PO lock tất cả product của request bằng 1 query (`id IN (...) ORDER BY id FOR UPDATE`). Sắp theo id để mọi transaction lock theo cùng thứ tự, tránh deadlock. Sau khi lock xong không còn SELECT nào nữa, nên INSERT / UPDATE (inventory, stock movement, item) được gửi thành JDBC batch lúc commit.
 
 ## Xử lý lỗi
 

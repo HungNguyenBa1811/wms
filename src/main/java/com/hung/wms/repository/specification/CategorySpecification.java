@@ -22,11 +22,11 @@ public class CategorySpecification {
 
     public static Specification<CategoryEntity> nameContains(String name) {
         if (name == null || name.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("name"), LikePattern.contains(name), LikePattern.ESCAPE);
     }
 
     public static Specification<CategoryEntity> descriptionContains(String description) {
         if (description == null || description.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("description")), "%" + description.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("description"), LikePattern.contains(description), LikePattern.ESCAPE);
     }
 }

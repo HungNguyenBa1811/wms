@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,8 +21,10 @@ public interface InventoryRepository extends JpaRepository<InventoryEntity, Stri
     boolean existsByProduct_IdAndQuantityGreaterThan(String productId, Integer quantity);
     boolean existsByWarehouse_IdAndQuantityGreaterThan(String warehouseId, Integer quantity);
 
+    // Receive: locks every inventory row the PO needs in 1 query instead of 1 per item.
+    // ORDER BY product id so two transactions always lock rows in the same order (no deadlock).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM InventoryEntity i WHERE i.warehouse.id = :warehouseId AND i.product.id = :productId")
-    Optional<InventoryEntity> findByWarehouseIdAndProductIdForUpdate(@Param("warehouseId") String warehouseId,
-                                                                     @Param("productId") String productId);
+    @Query("SELECT i FROM InventoryEntity i WHERE i.warehouse.id = :warehouseId AND i.product.id IN :productIds ORDER BY i.product.id")
+    List<InventoryEntity> findAllByWarehouseIdAndProductIdInForUpdate(@Param("warehouseId") String warehouseId,
+                                                                      @Param("productIds") Collection<String> productIds);
 }

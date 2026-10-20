@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,4 +28,10 @@ public interface ProductRepository extends JpaRepository<ProductEntity, String>,
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id AND p.isDeleted = false")
     Optional<ProductEntity> findByIdAndIsDeletedFalseForUpdate(@Param("id") String id);
+
+    // Create PO: locks every product of the request in 1 query instead of 1 per item.
+    // ORDER BY id so two transactions always lock rows in the same order (no deadlock).
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM ProductEntity p WHERE p.id IN :ids AND p.isDeleted = false ORDER BY p.id")
+    List<ProductEntity> findAllByIdInAndIsDeletedFalseForUpdate(@Param("ids") Collection<String> ids);
 }

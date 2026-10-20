@@ -6,8 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 
-// Viet chung ra 1
-
 public class ProductSpecification {
     private ProductSpecification() {
     }
@@ -16,7 +14,7 @@ public class ProductSpecification {
         return Specification.allOf(
                 notDeleted(),
                 nameContains(productSearchRequest.getName()),
-                productCodeContains(productSearchRequest.getProductCode()),
+                productCodeStartsWith(productSearchRequest.getProductCode()),
                 hasCategory(productSearchRequest.getCategoryId()),
                 priceFrom(productSearchRequest.getPriceFrom()),
                 priceTo(productSearchRequest.getPriceTo())
@@ -29,12 +27,13 @@ public class ProductSpecification {
 
     public static Specification<ProductEntity> nameContains(String name) {
         if (name == null || name.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("name"), LikePattern.contains(name), LikePattern.ESCAPE);
     }
 
-    public static Specification<ProductEntity> productCodeContains(String productCode) {
+    // Prefix search: "SEED" matches "SEED-001" but "001" does not. Uses the unique index on the code column
+    public static Specification<ProductEntity> productCodeStartsWith(String productCode) {
         if (productCode == null || productCode.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(cb.lower(root.get("productCode")), "%" + productCode.trim().toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(root.get("productCode"), LikePattern.startsWith(productCode), LikePattern.ESCAPE);
     }
 
     public static Specification<ProductEntity> hasCategory(String categoryId) {

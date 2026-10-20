@@ -12,7 +12,15 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "purchase_orders")
+@Table(
+        name = "purchase_orders",
+        indexes = {
+                // GET /purchase-orders: ORDER BY created_at DESC LIMIT n (also the subquery of the @EntityGraph page query)
+                @Index(name = "idx_purchase_order_created", columnList = "created_at"),
+                // GET /purchase-orders?status=...: filter + sort from the same index
+                @Index(name = "idx_purchase_order_status_created", columnList = "status, created_at")
+        }
+)
 public class PurchaseOrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

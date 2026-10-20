@@ -13,7 +13,13 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "products")
+@Table(
+        name = "products",
+        indexes = {
+                // GET /products: WHERE is_deleted = 0 ORDER BY created_at DESC LIMIT n reads the index in order, no filesort
+                @Index(name = "idx_product_deleted_created", columnList = "is_deleted, created_at")
+        }
+)
 public class ProductEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
