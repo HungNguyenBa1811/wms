@@ -13,8 +13,7 @@ import com.hung.wms.entity.InventoryEntity;
 import com.hung.wms.entity.ProductEntity;
 import com.hung.wms.entity.SupplierEntity;
 import com.hung.wms.entity.WarehouseEntity;
-import com.hung.wms.repository.specification.InventorySpecification;
-import com.hung.wms.repository.specification.StockMovementSpecification;
+import com.hung.wms.repository.specification.SpecificationUtils;
 import com.hung.wms.service.ProductService;
 import com.hung.wms.service.PurchaseOrderService;
 import com.hung.wms.service.SupplierService;
@@ -329,22 +328,22 @@ abstract class ConcurrencyTestSupport {
 
     protected int inventoryQuantity(String warehouseId, String productId) {
         List<InventoryEntity> rows = inventoryRepository.findAll(Specification.allOf(
-                InventorySpecification.hasWarehouse(warehouseId),
-                InventorySpecification.hasProduct(productId)));
+                SpecificationUtils.equal("warehouse.id", warehouseId),
+                SpecificationUtils.equal("product.id", productId)));
         assertThat(rows).as("inventory rows for one warehouse + product").hasSizeLessThanOrEqualTo(1);
         return rows.isEmpty() ? 0 : rows.get(0).getQuantity();
     }
 
     protected int inventoryRowCount(String warehouseId, String productId) {
         return (int) inventoryRepository.count(Specification.allOf(
-                InventorySpecification.hasWarehouse(warehouseId),
-                InventorySpecification.hasProduct(productId)));
+                SpecificationUtils.equal("warehouse.id", warehouseId),
+                SpecificationUtils.equal("product.id", productId)));
     }
 
     protected int stockMovementCount(String warehouseId, String productId) {
         return (int) stockMovementRepository.count(Specification.allOf(
-                StockMovementSpecification.hasWarehouse(warehouseId),
-                StockMovementSpecification.hasProduct(productId)));
+                SpecificationUtils.equal("warehouse.id", warehouseId),
+                SpecificationUtils.equal("product.id", productId)));
     }
 
     protected int itemCount(String purchaseOrderId) {

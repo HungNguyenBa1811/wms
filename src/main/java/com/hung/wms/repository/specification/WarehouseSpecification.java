@@ -4,6 +4,11 @@ import com.hung.wms.dto.request.warehouse.WarehouseSearchRequest;
 import com.hung.wms.entity.WarehouseEntity;
 import org.springframework.data.jpa.domain.Specification;
 
+import static com.hung.wms.repository.specification.SpecificationUtils.contains;
+import static com.hung.wms.repository.specification.SpecificationUtils.notDeleted;
+import static com.hung.wms.repository.specification.SpecificationUtils.startsWith;
+
+// Codes use startsWith (prefix LIKE) so MySQL can use the unique index of the code column; other text uses contains
 public class WarehouseSpecification {
     private WarehouseSpecification() {
     }
@@ -11,29 +16,9 @@ public class WarehouseSpecification {
     public static Specification<WarehouseEntity> search(WarehouseSearchRequest request) {
         return Specification.allOf(
                 notDeleted(),
-                warehouseCodeStartsWith(request.getWarehouseCode()),
-                nameContains(request.getName()),
-                locationContains(request.getLocation())
+                startsWith("warehouseCode", request.getWarehouseCode()),
+                contains("name", request.getName()),
+                contains("location", request.getLocation())
         );
-    }
-
-    public static Specification<WarehouseEntity> notDeleted() {
-        return (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
-    }
-
-    // Prefix search: "WH" matches "WH-001" but "001" does not. Uses the unique index on the code column
-    public static Specification<WarehouseEntity> warehouseCodeStartsWith(String warehouseCode) {
-        if (warehouseCode == null || warehouseCode.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(root.get("warehouseCode"), LikePattern.startsWith(warehouseCode), LikePattern.ESCAPE);
-    }
-
-    public static Specification<WarehouseEntity> nameContains(String name) {
-        if (name == null || name.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(root.get("name"), LikePattern.contains(name), LikePattern.ESCAPE);
-    }
-
-    public static Specification<WarehouseEntity> locationContains(String location) {
-        if (location == null || location.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.like(root.get("location"), LikePattern.contains(location), LikePattern.ESCAPE);
     }
 }

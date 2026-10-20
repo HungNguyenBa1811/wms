@@ -1,6 +1,6 @@
 package com.hung.wms.repository.specification;
 
-// Builds LIKE patterns for the *Specification classes.
+// Builds LIKE patterns for SpecificationUtils.contains / startsWith.
 // - No lower(): the columns use the MySQL default collation utf8mb4_0900_ai_ci, which already ignores case
 //   (and accents). lower(column) only forced a full scan because no index can be used on it.
 // - Codes use a prefix pattern ("abc%") so MySQL can range-scan the unique index on the code column;

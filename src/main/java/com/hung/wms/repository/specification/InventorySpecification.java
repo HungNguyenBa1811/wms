@@ -4,24 +4,16 @@ import com.hung.wms.dto.request.inventory.InventorySearchRequest;
 import com.hung.wms.entity.InventoryEntity;
 import org.springframework.data.jpa.domain.Specification;
 
+import static com.hung.wms.repository.specification.SpecificationUtils.equal;
+
 public class InventorySpecification {
     private InventorySpecification() {
     }
 
     public static Specification<InventoryEntity> search(InventorySearchRequest request) {
         return Specification.allOf(
-                hasWarehouse(request.getWarehouseId()),
-                hasProduct(request.getProductId())
+                equal("warehouse.id", request.getWarehouseId()),
+                equal("product.id", request.getProductId())
         );
-    }
-
-    public static Specification<InventoryEntity> hasWarehouse(String warehouseId) {
-        if (warehouseId == null || warehouseId.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.equal(root.get("warehouse").get("id"), warehouseId);
-    }
-
-    public static Specification<InventoryEntity> hasProduct(String productId) {
-        if (productId == null || productId.isBlank()) return Specification.unrestricted();
-        return (root, query, cb) -> cb.equal(root.get("product").get("id"), productId);
     }
 }
