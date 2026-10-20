@@ -1,9 +1,9 @@
 package com.hung.wms.service;
 
-import com.hung.wms.model.request.supplier.SupplierRequest;
-import com.hung.wms.model.request.supplier.SupplierSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.supplier.SupplierResponse;
+import com.hung.wms.dto.request.supplier.SupplierRequest;
+import com.hung.wms.dto.request.supplier.SupplierSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.supplier.SupplierResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface SupplierService {

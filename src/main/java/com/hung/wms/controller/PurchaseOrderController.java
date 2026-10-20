@@ -1,0 +1,58 @@
+package com.hung.wms.controller;
+
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderItemRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.purchaseorder.PurchaseOrderResponse;
+import com.hung.wms.service.PurchaseOrderService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+
+@RestController
+@RequestMapping("/api/purchase-orders")
+public class PurchaseOrderController {
+    @Autowired
+    private PurchaseOrderService purchaseOrderService;
+
+    @GetMapping
+    public ResponseEntity<PageResponse<PurchaseOrderResponse>> getPurchaseOrder(
+            @Valid PurchaseOrderSearchRequest purchaseOrderSearchRequest,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<PurchaseOrderResponse> result = purchaseOrderService.findAllPurchaseOrders(purchaseOrderSearchRequest, pageable);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PurchaseOrderResponse> getPurchaseOrderById(@PathVariable String id) {
+        PurchaseOrderResponse result = purchaseOrderService.findPurchaseOrderById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @PostMapping
+    public ResponseEntity<PurchaseOrderResponse> createPurchaseOrder(@Valid @RequestBody PurchaseOrderRequest purchaseOrderRequest) {
+        PurchaseOrderResponse result = purchaseOrderService.createPurchaseOrder(purchaseOrderRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @PostMapping("/{id}/items")
+    public ResponseEntity<PurchaseOrderResponse> addPurchaseOrderItem(@PathVariable String id,
+                                                                      @Valid @RequestBody PurchaseOrderItemRequest purchaseOrderItemRequest) {
+        PurchaseOrderResponse result = purchaseOrderService.addPurchaseOrderItem(id, purchaseOrderItemRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @PostMapping("/{id}/receive")
+    public ResponseEntity<PurchaseOrderResponse> receivePurchaseOrder(@PathVariable String id, Principal principal) {
+        PurchaseOrderResponse result = purchaseOrderService.receivePurchaseOrder(id, principal);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+}

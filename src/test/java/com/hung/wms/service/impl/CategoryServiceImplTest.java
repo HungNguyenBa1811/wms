@@ -1,13 +1,13 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.CategoryConverter;
+import com.hung.wms.mapper.CategoryMapper;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.category.CategoryRequest;
+import com.hung.wms.dto.request.category.CategoryRequest;
 import com.hung.wms.repository.CategoryRepository;
 import com.hung.wms.repository.ProductRepository;
-import com.hung.wms.repository.entity.CategoryEntity;
+import com.hung.wms.entity.CategoryEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class CategoryServiceImplTest {
     @Mock
     private ProductRepository productRepository;
     @Mock
-    private CategoryConverter categoryConverter;
+    private CategoryMapper categoryMapper;
     @Mock
     private ModelMapper modelMapper;
 

@@ -1,7 +1,7 @@
 package com.hung.wms.repository.specification;
 
-import com.hung.wms.model.request.product.ProductSearchRequest;
-import com.hung.wms.repository.entity.ProductEntity;
+import com.hung.wms.dto.request.product.ProductSearchRequest;
+import com.hung.wms.entity.ProductEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;

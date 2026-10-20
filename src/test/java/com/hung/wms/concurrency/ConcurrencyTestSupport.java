@@ -1,7 +1,7 @@
 package com.hung.wms.concurrency;
 
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderItemRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderRequest;
 import com.hung.wms.repository.CategoryRepository;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
@@ -9,10 +9,10 @@ import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.StockMovementRepository;
 import com.hung.wms.repository.SupplierRepository;
 import com.hung.wms.repository.WarehouseRepository;
-import com.hung.wms.repository.entity.InventoryEntity;
-import com.hung.wms.repository.entity.ProductEntity;
-import com.hung.wms.repository.entity.SupplierEntity;
-import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.entity.InventoryEntity;
+import com.hung.wms.entity.ProductEntity;
+import com.hung.wms.entity.SupplierEntity;
+import com.hung.wms.entity.WarehouseEntity;
 import com.hung.wms.repository.specification.InventorySpecification;
 import com.hung.wms.repository.specification.StockMovementSpecification;
 import com.hung.wms.service.ProductService;

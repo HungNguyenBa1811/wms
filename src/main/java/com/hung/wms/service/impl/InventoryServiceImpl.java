@@ -1,11 +1,11 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.InventoryConverter;
-import com.hung.wms.model.request.inventory.InventorySearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.inventory.InventoryResponse;
+import com.hung.wms.mapper.InventoryMapper;
+import com.hung.wms.dto.request.inventory.InventorySearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.inventory.InventoryResponse;
 import com.hung.wms.repository.InventoryRepository;
-import com.hung.wms.repository.entity.InventoryEntity;
+import com.hung.wms.entity.InventoryEntity;
 import com.hung.wms.repository.specification.InventorySpecification;
 import com.hung.wms.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,13 +20,13 @@ public class InventoryServiceImpl implements InventoryService {
     private InventoryRepository inventoryRepository;
 
     @Autowired
-    private InventoryConverter inventoryConverter;
+    private InventoryMapper inventoryMapper;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<InventoryResponse> findAllInventories(InventorySearchRequest request, Pageable pageable) {
         Page<InventoryEntity> inventoryEntityPage = inventoryRepository
                 .findAll(InventorySpecification.search(request), pageable);
-        return new PageResponse<>(inventoryEntityPage.map(inventoryConverter::toResponse));
+        return new PageResponse<>(inventoryEntityPage.map(inventoryMapper::toResponse));
     }
 }

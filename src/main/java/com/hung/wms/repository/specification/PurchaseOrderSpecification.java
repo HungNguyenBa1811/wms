@@ -1,8 +1,8 @@
 package com.hung.wms.repository.specification;
 
 import com.hung.wms.enums.PurchaseOrderStatus;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderSearchRequest;
-import com.hung.wms.repository.entity.PurchaseOrderEntity;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderSearchRequest;
+import com.hung.wms.entity.PurchaseOrderEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 public class PurchaseOrderSpecification {

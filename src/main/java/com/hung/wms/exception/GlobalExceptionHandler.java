@@ -1,6 +1,6 @@
 package com.hung.wms.exception;
 
-import com.hung.wms.model.response.error.ErrorResponse;
+import com.hung.wms.dto.response.error.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;

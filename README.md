@@ -365,15 +365,17 @@ Mọi lỗi nghiệp vụ được `GlobalExceptionHandler` chuyển thành resp
 
 ```text
 src/main/java/com/hung/wms
-|-- api            Controller (REST endpoint)
+|-- controller     Controller (REST endpoint)
 |-- service        Interface service
 |   `-- impl       Business logic
 |-- repository     Spring Data JPA repository
-|   `-- entity     JPA entity
-|-- model
+|   |-- custom     Fragment viết tay (upsert inventory bằng native SQL)
+|   `-- specification  Specification cho filter danh sách
+|-- entity         JPA entity
+|-- dto
 |   |-- request    Request DTO
 |   `-- response   Response DTO
-|-- converter      Chuyển đổi Entity <-> DTO (ModelMapper)
+|-- mapper         Chuyển đổi Entity <-> DTO (ModelMapper)
 |-- exception      Custom exception + GlobalExceptionHandler
 |-- validation     Validation group OnCreate, constraint MaxBytes
 |-- enums          PurchaseOrderStatus, MovementType, Role

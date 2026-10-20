@@ -1,6 +1,6 @@
 package com.hung.wms.repository;
 
-import com.hung.wms.repository.entity.UserEntity;
+import com.hung.wms.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

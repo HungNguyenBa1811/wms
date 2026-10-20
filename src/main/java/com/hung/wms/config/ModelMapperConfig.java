@@ -1,18 +1,18 @@
 package com.hung.wms.config;
 
-import com.hung.wms.model.request.product.ProductRequest;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
-import com.hung.wms.model.response.inventory.InventoryResponse;
-import com.hung.wms.model.response.product.ProductResponse;
-import com.hung.wms.model.response.purchaseorder.PurchaseOrderItemResponse;
-import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
-import com.hung.wms.model.response.stockmovement.StockMovementResponse;
-import com.hung.wms.repository.entity.InventoryEntity;
-import com.hung.wms.repository.entity.ProductEntity;
-import com.hung.wms.repository.entity.PurchaseOrderEntity;
-import com.hung.wms.repository.entity.PurchaseOrderItemEntity;
-import com.hung.wms.repository.entity.StockMovementEntity;
+import com.hung.wms.dto.request.product.ProductRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderItemRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderRequest;
+import com.hung.wms.dto.response.inventory.InventoryResponse;
+import com.hung.wms.dto.response.product.ProductResponse;
+import com.hung.wms.dto.response.purchaseorder.PurchaseOrderItemResponse;
+import com.hung.wms.dto.response.purchaseorder.PurchaseOrderResponse;
+import com.hung.wms.dto.response.stockmovement.StockMovementResponse;
+import com.hung.wms.entity.InventoryEntity;
+import com.hung.wms.entity.ProductEntity;
+import com.hung.wms.entity.PurchaseOrderEntity;
+import com.hung.wms.entity.PurchaseOrderItemEntity;
+import com.hung.wms.entity.StockMovementEntity;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
@@ -44,7 +44,7 @@ public class ModelMapperConfig {
                     m.skip(PurchaseOrderItemEntity::setPurchaseOrder);
                 });
 
-        // items are mapped one by one in PurchaseOrderConverter
+        // items are mapped one by one in PurchaseOrderMapper
         modelMapper.typeMap(PurchaseOrderEntity.class, PurchaseOrderResponse.class)
                 .addMappings(m -> {
                     m.map(src -> src.getSupplier().getId(), PurchaseOrderResponse::setSupplierId);

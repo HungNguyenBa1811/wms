@@ -1,14 +1,14 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.SupplierConverter;
+import com.hung.wms.mapper.SupplierMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.supplier.SupplierRequest;
-import com.hung.wms.model.response.supplier.SupplierResponse;
+import com.hung.wms.dto.request.supplier.SupplierRequest;
+import com.hung.wms.dto.response.supplier.SupplierResponse;
 import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.SupplierRepository;
-import com.hung.wms.repository.entity.SupplierEntity;
+import com.hung.wms.entity.SupplierEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class SupplierServiceImplTest {
     @Mock
     private PurchaseOrderRepository purchaseOrderRepository;
     @Mock
-    private SupplierConverter supplierConverter;
+    private SupplierMapper supplierMapper;
     @Mock
     private ModelMapper modelMapper;
 
@@ -53,9 +53,9 @@ class SupplierServiceImplTest {
         request.setName("ACME");
         SupplierEntity entity = new SupplierEntity();
         SupplierResponse response = new SupplierResponse();
-        when(supplierConverter.toEntity(request)).thenReturn(entity);
+        when(supplierMapper.toEntity(request)).thenReturn(entity);
         when(supplierRepository.save(entity)).thenReturn(entity);
-        when(supplierConverter.toResponse(entity)).thenReturn(response);
+        when(supplierMapper.toResponse(entity)).thenReturn(response);
 
         // when
         SupplierResponse result = supplierService.createSupplier(request);

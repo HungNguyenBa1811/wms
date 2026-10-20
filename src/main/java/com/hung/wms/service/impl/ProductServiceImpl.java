@@ -1,20 +1,20 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.ProductConverter;
+import com.hung.wms.mapper.ProductMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.product.ProductRequest;
-import com.hung.wms.model.request.product.ProductSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.product.ProductResponse;
+import com.hung.wms.dto.request.product.ProductRequest;
+import com.hung.wms.dto.request.product.ProductSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.product.ProductResponse;
 import com.hung.wms.repository.CategoryRepository;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
-import com.hung.wms.repository.entity.CategoryEntity;
-import com.hung.wms.repository.entity.ProductEntity;
+import com.hung.wms.entity.CategoryEntity;
+import com.hung.wms.entity.ProductEntity;
 import com.hung.wms.repository.specification.ProductSpecification;
 import com.hung.wms.service.ProductService;
 import org.modelmapper.ModelMapper;
@@ -39,7 +39,7 @@ public class ProductServiceImpl implements ProductService {
     private PurchaseOrderRepository purchaseOrderRepository;
 
     @Autowired
-    private ProductConverter productConverter;
+    private ProductMapper productMapper;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -47,7 +47,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse createProduct(ProductRequest product) {
-        ProductEntity productEntity = productConverter.toEntity(product);
+        ProductEntity productEntity = productMapper.toEntity(product);
         if (productRepository.existsByProductCode(product.getProductCode())) {
             throw new ResourceDuplicateException("Product code already exists");
         }
@@ -57,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
         }
-        return productConverter.toResponse(productRepository.save(productEntity));
+        return productMapper.toResponse(productRepository.save(productEntity));
     }
 
     @Override
@@ -76,14 +76,14 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
         }
-        return productConverter.toResponse(productEntity);
+        return productMapper.toResponse(productEntity);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> findAllProducts(ProductSearchRequest productSearchRequest, Pageable pageable) {
         Page<ProductEntity> productEntityPage = productRepository.findAll(ProductSpecification.search(productSearchRequest), pageable);
-        return new PageResponse<>(productEntityPage.map(productConverter::toResponse));
+        return new PageResponse<>(productEntityPage.map(productMapper::toResponse));
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ProductServiceImpl implements ProductService {
         ProductEntity productEntity = productRepository
                 .findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        return productConverter.toResponse(productEntity);
+        return productMapper.toResponse(productEntity);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.hung.wms.config;
 
-import com.hung.wms.model.response.error.ErrorResponse;
+import com.hung.wms.dto.response.error.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;

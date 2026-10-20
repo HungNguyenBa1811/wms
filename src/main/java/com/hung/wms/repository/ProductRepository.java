@@ -1,6 +1,6 @@
 package com.hung.wms.repository;
 
-import com.hung.wms.repository.entity.ProductEntity;
+import com.hung.wms.entity.ProductEntity;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

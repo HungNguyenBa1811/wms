@@ -1,7 +1,7 @@
 package com.hung.wms.repository.specification;
 
-import com.hung.wms.model.request.inventory.InventorySearchRequest;
-import com.hung.wms.repository.entity.InventoryEntity;
+import com.hung.wms.dto.request.inventory.InventorySearchRequest;
+import com.hung.wms.entity.InventoryEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 public class InventorySpecification {

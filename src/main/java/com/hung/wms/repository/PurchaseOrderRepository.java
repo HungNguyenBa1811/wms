@@ -1,7 +1,7 @@
 package com.hung.wms.repository;
 
 import com.hung.wms.enums.PurchaseOrderStatus;
-import com.hung.wms.repository.entity.PurchaseOrderEntity;
+import com.hung.wms.entity.PurchaseOrderEntity;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

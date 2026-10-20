@@ -1,18 +1,18 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.WarehouseConverter;
+import com.hung.wms.mapper.WarehouseMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.warehouse.WarehouseRequest;
-import com.hung.wms.model.request.warehouse.WarehouseSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.warehouse.WarehouseResponse;
+import com.hung.wms.dto.request.warehouse.WarehouseRequest;
+import com.hung.wms.dto.request.warehouse.WarehouseSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.warehouse.WarehouseResponse;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.WarehouseRepository;
-import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.entity.WarehouseEntity;
 import com.hung.wms.repository.specification.WarehouseSpecification;
 import com.hung.wms.service.WarehouseService;
 import org.modelmapper.ModelMapper;
@@ -34,7 +34,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     private PurchaseOrderRepository purchaseOrderRepository;
 
     @Autowired
-    private WarehouseConverter warehouseConverter;
+    private WarehouseMapper warehouseMapper;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -44,8 +44,8 @@ public class WarehouseServiceImpl implements WarehouseService {
     public WarehouseResponse createWarehouse(WarehouseRequest warehouse) {
         if (warehouseRepository.existsByWarehouseCode(warehouse.getWarehouseCode()))
             throw new ResourceDuplicateException("Warehouse already exists");
-        WarehouseEntity warehouseEntity = warehouseConverter.toEntity(warehouse);
-        return warehouseConverter.toResponse(warehouseRepository.save(warehouseEntity));
+        WarehouseEntity warehouseEntity = warehouseMapper.toEntity(warehouse);
+        return warehouseMapper.toResponse(warehouseRepository.save(warehouseEntity));
     }
 
     @Override
@@ -58,14 +58,14 @@ public class WarehouseServiceImpl implements WarehouseService {
                 .findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + id));
         modelMapper.map(warehouse, warehouseEntity);
-        return warehouseConverter.toResponse(warehouseRepository.save(warehouseEntity));
+        return warehouseMapper.toResponse(warehouseRepository.save(warehouseEntity));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<WarehouseResponse> findAllWarehouses(WarehouseSearchRequest warehouseSearchRequest, Pageable pageable) {
         Page<WarehouseEntity> warehouseEntityPage = warehouseRepository.findAll(WarehouseSpecification.search(warehouseSearchRequest), pageable);
-        return new PageResponse<>(warehouseEntityPage.map(warehouseConverter::toResponse));
+        return new PageResponse<>(warehouseEntityPage.map(warehouseMapper::toResponse));
     }
 
     @Override
@@ -74,7 +74,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         WarehouseEntity warehouse = warehouseRepository
                 .findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + id));
-        return warehouseConverter.toResponse(warehouse);
+        return warehouseMapper.toResponse(warehouse);
     }
 
     @Override

@@ -1,8 +1,8 @@
 package com.hung.wms.service;
 
-import com.hung.wms.model.request.stockmovement.StockMovementSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.stockmovement.StockMovementResponse;
+import com.hung.wms.dto.request.stockmovement.StockMovementSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.stockmovement.StockMovementResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface StockMovementService {

@@ -1,8 +1,8 @@
 package com.hung.wms.concurrency;
 
 import com.hung.wms.exception.ResourceDuplicateException;
-import com.hung.wms.model.request.product.ProductRequest;
-import com.hung.wms.model.request.warehouse.WarehouseRequest;
+import com.hung.wms.dto.request.product.ProductRequest;
+import com.hung.wms.dto.request.warehouse.WarehouseRequest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

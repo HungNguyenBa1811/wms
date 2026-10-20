@@ -1,9 +1,9 @@
 package com.hung.wms.service;
 
-import com.hung.wms.model.request.category.CategoryRequest;
-import com.hung.wms.model.request.category.CategorySearchRequest;
-import com.hung.wms.model.response.category.CategoryResponse;
-import com.hung.wms.model.response.common.PageResponse;
+import com.hung.wms.dto.request.category.CategoryRequest;
+import com.hung.wms.dto.request.category.CategorySearchRequest;
+import com.hung.wms.dto.response.category.CategoryResponse;
+import com.hung.wms.dto.response.common.PageResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface CategoryService {

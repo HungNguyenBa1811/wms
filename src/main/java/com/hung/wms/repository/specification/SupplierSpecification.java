@@ -1,7 +1,7 @@
 package com.hung.wms.repository.specification;
 
-import com.hung.wms.model.request.supplier.SupplierSearchRequest;
-import com.hung.wms.repository.entity.SupplierEntity;
+import com.hung.wms.dto.request.supplier.SupplierSearchRequest;
+import com.hung.wms.entity.SupplierEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 public class SupplierSpecification {

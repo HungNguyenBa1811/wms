@@ -1,7 +1,7 @@
 package com.hung.wms.repository.specification;
 
-import com.hung.wms.model.request.category.CategorySearchRequest;
-import com.hung.wms.repository.entity.CategoryEntity;
+import com.hung.wms.dto.request.category.CategorySearchRequest;
+import com.hung.wms.entity.CategoryEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 public class CategorySpecification {

@@ -2,10 +2,10 @@ package com.hung.wms.concurrency;
 
 import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.InvalidStateException;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
-import com.hung.wms.repository.entity.ProductEntity;
-import com.hung.wms.repository.entity.SupplierEntity;
-import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderItemRequest;
+import com.hung.wms.entity.ProductEntity;
+import com.hung.wms.entity.SupplierEntity;
+import com.hung.wms.entity.WarehouseEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

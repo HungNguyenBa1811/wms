@@ -1,7 +1,7 @@
 package com.hung.wms.service.impl;
 
 import com.hung.wms.repository.UserRepository;
-import com.hung.wms.repository.entity.UserEntity;
+import com.hung.wms.entity.UserEntity;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;

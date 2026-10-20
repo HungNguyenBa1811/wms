@@ -1,17 +1,17 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.PurchaseOrderConverter;
-import com.hung.wms.converter.StockMovementConverter;
+import com.hung.wms.mapper.PurchaseOrderMapper;
+import com.hung.wms.mapper.StockMovementMapper;
 import com.hung.wms.enums.MovementType;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.InvalidStateException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderItemRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.purchaseorder.PurchaseOrderResponse;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
@@ -19,7 +19,7 @@ import com.hung.wms.repository.StockMovementRepository;
 import com.hung.wms.repository.SupplierRepository;
 import com.hung.wms.repository.UserRepository;
 import com.hung.wms.repository.WarehouseRepository;
-import com.hung.wms.repository.entity.*;
+import com.hung.wms.entity.*;
 import com.hung.wms.repository.specification.PurchaseOrderSpecification;
 import com.hung.wms.service.PurchaseOrderService;
 
@@ -65,15 +65,15 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private StockMovementRepository stockMovementRepository;
 
     @Autowired
-    private PurchaseOrderConverter purchaseOrderConverter;
+    private PurchaseOrderMapper purchaseOrderMapper;
 
     @Autowired
-    private StockMovementConverter stockMovementConverter;
+    private StockMovementMapper stockMovementMapper;
 
     @Override
     @Transactional
     public PurchaseOrderResponse createPurchaseOrder(PurchaseOrderRequest request) {
-        PurchaseOrderEntity purchaseOrder = purchaseOrderConverter.toEntity(request);
+        PurchaseOrderEntity purchaseOrder = purchaseOrderMapper.toEntity(request);
         SupplierEntity supplier = supplierRepository
                 .findByIdAndIsDeletedFalse(request.getSupplierId())
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + request.getSupplierId()));
@@ -87,7 +87,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         for (PurchaseOrderItemRequest itemRequest : request.getItems()) {
             addItem(purchaseOrder, itemRequest, () -> Optional.ofNullable(products.get(itemRequest.getProductId())));
         }
-        return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
+        return purchaseOrderMapper.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
 
     @Override
@@ -100,7 +100,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             throw new InvalidStateException("Cannot add item to purchase order in status: " + purchaseOrder.getStatus());
         addItem(purchaseOrder, request,
                 () -> productRepository.findByIdAndIsDeletedFalseForUpdate(request.getProductId()));
-        return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
+        return purchaseOrderMapper.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
 
     @Override
@@ -124,7 +124,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         inventoryRepository.addQuantities(warehouse.getId(), quantityByProduct(purchaseOrder.getPurchaseOrderItems()));
         // No SELECT inside this loop: the stock movement INSERTs wait until commit and are sent as 1 JDBC batch
         for (PurchaseOrderItemEntity item : purchaseOrder.getPurchaseOrderItems()) {
-            stockMovementRepository.save(stockMovementConverter.toEntity(
+            stockMovementRepository.save(stockMovementMapper.toEntity(
                     item.getProduct(), warehouse, receivedBy, MovementType.IN, item.getQuantity(),
                     "Receive purchase order " + purchaseOrder.getId()));
         }
@@ -132,7 +132,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         purchaseOrder.setStatus(PurchaseOrderStatus.RECEIVED);
         purchaseOrder.setReceivedAt(LocalDateTime.now());
         purchaseOrder.setReceivedBy(receivedBy);
-        return purchaseOrderConverter.toResponse(purchaseOrderRepository.save(purchaseOrder));
+        return purchaseOrderMapper.toResponse(purchaseOrderRepository.save(purchaseOrder));
     }
 
     @Override
@@ -140,7 +140,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     public PageResponse<PurchaseOrderResponse> findAllPurchaseOrders(PurchaseOrderSearchRequest request, Pageable pageable) {
         Page<PurchaseOrderEntity> purchaseOrderEntityPage = purchaseOrderRepository
                 .findAll(PurchaseOrderSpecification.search(request), pageable);
-        return new PageResponse<>(purchaseOrderEntityPage.map(purchaseOrderConverter::toResponse));
+        return new PageResponse<>(purchaseOrderEntityPage.map(purchaseOrderMapper::toResponse));
     }
 
     @Override
@@ -149,7 +149,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         PurchaseOrderEntity purchaseOrder = purchaseOrderRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
-        return purchaseOrderConverter.toResponse(purchaseOrder);
+        return purchaseOrderMapper.toResponse(purchaseOrder);
     }
 
     // productLookup is only called after the duplicate check, so a duplicate still fails with 400 before any 404
@@ -159,7 +159,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .anyMatch(item -> item.getProduct().getId().equals(request.getProductId())))
             throw new BadRequestException("Product already exists in this purchase order");
 
-        PurchaseOrderItemEntity item = purchaseOrderConverter.toItemEntity(request);
+        PurchaseOrderItemEntity item = purchaseOrderMapper.toItemEntity(request);
         ProductEntity product = productLookup.get()
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
         item.setProduct(product);

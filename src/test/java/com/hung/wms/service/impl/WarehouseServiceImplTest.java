@@ -1,16 +1,16 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.WarehouseConverter;
+import com.hung.wms.mapper.WarehouseMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.warehouse.WarehouseRequest;
-import com.hung.wms.model.response.warehouse.WarehouseResponse;
+import com.hung.wms.dto.request.warehouse.WarehouseRequest;
+import com.hung.wms.dto.response.warehouse.WarehouseResponse;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.WarehouseRepository;
-import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.entity.WarehouseEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ class WarehouseServiceImplTest {
     @Mock
     private PurchaseOrderRepository purchaseOrderRepository;
     @Mock
-    private WarehouseConverter warehouseConverter;
+    private WarehouseMapper warehouseMapper;
     @Mock
     private ModelMapper modelMapper;
 
@@ -71,9 +71,9 @@ class WarehouseServiceImplTest {
             WarehouseEntity entity = new WarehouseEntity();
             WarehouseResponse response = new WarehouseResponse();
             when(warehouseRepository.existsByWarehouseCode("WH-009")).thenReturn(false);
-            when(warehouseConverter.toEntity(request)).thenReturn(entity);
+            when(warehouseMapper.toEntity(request)).thenReturn(entity);
             when(warehouseRepository.save(entity)).thenReturn(entity);
-            when(warehouseConverter.toResponse(entity)).thenReturn(response);
+            when(warehouseMapper.toResponse(entity)).thenReturn(response);
 
             // when
             WarehouseResponse result = warehouseService.createWarehouse(request);

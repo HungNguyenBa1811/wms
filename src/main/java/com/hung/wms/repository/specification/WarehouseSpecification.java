@@ -1,7 +1,7 @@
 package com.hung.wms.repository.specification;
 
-import com.hung.wms.model.request.warehouse.WarehouseSearchRequest;
-import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.dto.request.warehouse.WarehouseSearchRequest;
+import com.hung.wms.entity.WarehouseEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 public class WarehouseSpecification {

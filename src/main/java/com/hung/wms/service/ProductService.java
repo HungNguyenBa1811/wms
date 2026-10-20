@@ -1,9 +1,9 @@
 package com.hung.wms.service;
 
-import com.hung.wms.model.request.product.ProductRequest;
-import com.hung.wms.model.request.product.ProductSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.product.ProductResponse;
+import com.hung.wms.dto.request.product.ProductRequest;
+import com.hung.wms.dto.request.product.ProductSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.product.ProductResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface ProductService {

@@ -1,16 +1,16 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.SupplierConverter;
+import com.hung.wms.mapper.SupplierMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.supplier.SupplierRequest;
-import com.hung.wms.model.request.supplier.SupplierSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.supplier.SupplierResponse;
+import com.hung.wms.dto.request.supplier.SupplierRequest;
+import com.hung.wms.dto.request.supplier.SupplierSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.supplier.SupplierResponse;
 import com.hung.wms.repository.PurchaseOrderRepository;
 import com.hung.wms.repository.SupplierRepository;
-import com.hung.wms.repository.entity.SupplierEntity;
+import com.hung.wms.entity.SupplierEntity;
 import com.hung.wms.repository.specification.SupplierSpecification;
 import com.hung.wms.service.SupplierService;
 import org.modelmapper.ModelMapper;
@@ -29,7 +29,7 @@ public class SupplierServiceImpl implements SupplierService {
     private PurchaseOrderRepository purchaseOrderRepository;
 
     @Autowired
-    private SupplierConverter supplierConverter;
+    private SupplierMapper supplierMapper;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -37,8 +37,8 @@ public class SupplierServiceImpl implements SupplierService {
     @Override
     @Transactional
     public SupplierResponse createSupplier(SupplierRequest request) {
-        SupplierEntity supplier = supplierConverter.toEntity(request);
-        return supplierConverter.toResponse(supplierRepository.save(supplier));
+        SupplierEntity supplier = supplierMapper.toEntity(request);
+        return supplierMapper.toResponse(supplierRepository.save(supplier));
     }
 
     @Override
@@ -48,14 +48,14 @@ public class SupplierServiceImpl implements SupplierService {
                 .findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
         modelMapper.map(request, supplier);
-        return supplierConverter.toResponse(supplierRepository.save(supplier));
+        return supplierMapper.toResponse(supplierRepository.save(supplier));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<SupplierResponse> findAllSuppliers(SupplierSearchRequest supplierSearchRequest, Pageable pageable) {
         Page<SupplierEntity> supplierEntityPage = supplierRepository.findAll(SupplierSpecification.search(supplierSearchRequest), pageable);
-        return new PageResponse<>(supplierEntityPage.map(supplierConverter::toResponse));
+        return new PageResponse<>(supplierEntityPage.map(supplierMapper::toResponse));
     }
 
     @Override
@@ -64,7 +64,7 @@ public class SupplierServiceImpl implements SupplierService {
         SupplierEntity supplier = supplierRepository
                 .findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
-        return supplierConverter.toResponse(supplier);
+        return supplierMapper.toResponse(supplier);
     }
 
     @Override

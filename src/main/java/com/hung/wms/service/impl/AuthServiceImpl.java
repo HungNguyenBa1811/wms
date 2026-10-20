@@ -1,14 +1,14 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.UserConverter;
+import com.hung.wms.mapper.UserMapper;
 import com.hung.wms.enums.Role;
 import com.hung.wms.exception.ResourceDuplicateException;
-import com.hung.wms.model.request.auth.LoginRequest;
-import com.hung.wms.model.request.auth.RegisterRequest;
-import com.hung.wms.model.response.auth.TokenResponse;
-import com.hung.wms.model.response.user.UserResponse;
+import com.hung.wms.dto.request.auth.LoginRequest;
+import com.hung.wms.dto.request.auth.RegisterRequest;
+import com.hung.wms.dto.response.auth.TokenResponse;
+import com.hung.wms.dto.response.user.UserResponse;
 import com.hung.wms.repository.UserRepository;
-import com.hung.wms.repository.entity.UserEntity;
+import com.hung.wms.entity.UserEntity;
 import com.hung.wms.service.AuthService;
 import com.hung.wms.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private UserRepository userRepository;
 
     @Autowired
-    private UserConverter userConverter;
+    private UserMapper userMapper;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -47,10 +47,10 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByEmail(request.getEmail()))
             throw new ResourceDuplicateException("Email already exists: " + request.getEmail());
 
-        UserEntity user = userConverter.toEntity(request);
+        UserEntity user = userMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(DEFAULT_ROLE);
-        return userConverter.toResponse(userRepository.save(user));
+        return userMapper.toResponse(userRepository.save(user));
     }
 
     @Override

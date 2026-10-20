@@ -1,12 +1,12 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.StockMovementConverter;
+import com.hung.wms.mapper.StockMovementMapper;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.stockmovement.StockMovementSearchRequest;
-import com.hung.wms.model.response.common.PageResponse;
-import com.hung.wms.model.response.stockmovement.StockMovementResponse;
+import com.hung.wms.dto.request.stockmovement.StockMovementSearchRequest;
+import com.hung.wms.dto.response.common.PageResponse;
+import com.hung.wms.dto.response.stockmovement.StockMovementResponse;
 import com.hung.wms.repository.StockMovementRepository;
-import com.hung.wms.repository.entity.StockMovementEntity;
+import com.hung.wms.entity.StockMovementEntity;
 import com.hung.wms.repository.specification.StockMovementSpecification;
 import com.hung.wms.service.StockMovementService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,14 +21,14 @@ public class StockMovementServiceImpl implements StockMovementService {
     private StockMovementRepository stockMovementRepository;
 
     @Autowired
-    private StockMovementConverter stockMovementConverter;
+    private StockMovementMapper stockMovementMapper;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<StockMovementResponse> findAllStockMovements(StockMovementSearchRequest request, Pageable pageable) {
         Page<StockMovementEntity> stockMovementEntityPage = stockMovementRepository
                 .findAll(StockMovementSpecification.search(request), pageable);
-        return new PageResponse<>(stockMovementEntityPage.map(stockMovementConverter::toResponse));
+        return new PageResponse<>(stockMovementEntityPage.map(stockMovementMapper::toResponse));
     }
 
     @Override
@@ -37,6 +37,6 @@ public class StockMovementServiceImpl implements StockMovementService {
         StockMovementEntity stockMovement = stockMovementRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Stock movement not found with id: " + id));
-        return stockMovementConverter.toResponse(stockMovement);
+        return stockMovementMapper.toResponse(stockMovement);
     }
 }

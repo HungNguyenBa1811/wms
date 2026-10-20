@@ -1,18 +1,18 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.ProductConverter;
+import com.hung.wms.mapper.ProductMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.product.ProductRequest;
-import com.hung.wms.model.response.product.ProductResponse;
+import com.hung.wms.dto.request.product.ProductRequest;
+import com.hung.wms.dto.response.product.ProductResponse;
 import com.hung.wms.repository.CategoryRepository;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
-import com.hung.wms.repository.entity.CategoryEntity;
-import com.hung.wms.repository.entity.ProductEntity;
+import com.hung.wms.entity.CategoryEntity;
+import com.hung.wms.entity.ProductEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ class ProductServiceImplTest {
     @Mock
     private PurchaseOrderRepository purchaseOrderRepository;
     @Mock
-    private ProductConverter productConverter;
+    private ProductMapper productMapper;
     @Mock
     private ModelMapper modelMapper;
 
@@ -62,7 +62,7 @@ class ProductServiceImplTest {
         void duplicateCode() {
             // given
             ProductRequest request = request("P-001", CATEGORY_ID);
-            when(productConverter.toEntity(request)).thenReturn(new ProductEntity());
+            when(productMapper.toEntity(request)).thenReturn(new ProductEntity());
             when(productRepository.existsByProductCode("P-001")).thenReturn(true);
 
             // when / then
@@ -76,7 +76,7 @@ class ProductServiceImplTest {
         void categoryNotFound() {
             // given
             ProductRequest request = request("P-001", CATEGORY_ID);
-            when(productConverter.toEntity(request)).thenReturn(new ProductEntity());
+            when(productMapper.toEntity(request)).thenReturn(new ProductEntity());
             when(productRepository.existsByProductCode("P-001")).thenReturn(false);
             when(categoryRepository.findByIdAndIsDeletedFalse(CATEGORY_ID)).thenReturn(Optional.empty());
 
@@ -95,11 +95,11 @@ class ProductServiceImplTest {
             ProductEntity entity = new ProductEntity();
             CategoryEntity category = category();
             ProductResponse response = new ProductResponse();
-            when(productConverter.toEntity(request)).thenReturn(entity);
+            when(productMapper.toEntity(request)).thenReturn(entity);
             when(productRepository.existsByProductCode("P-001")).thenReturn(false);
             when(categoryRepository.findByIdAndIsDeletedFalse(CATEGORY_ID)).thenReturn(Optional.of(category));
             when(productRepository.save(entity)).thenReturn(entity);
-            when(productConverter.toResponse(entity)).thenReturn(response);
+            when(productMapper.toResponse(entity)).thenReturn(response);
 
             // when
             ProductResponse result = productService.createProduct(request);

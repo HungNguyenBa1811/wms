@@ -1,15 +1,15 @@
 package com.hung.wms.service.impl;
 
-import com.hung.wms.converter.PurchaseOrderConverter;
-import com.hung.wms.converter.StockMovementConverter;
+import com.hung.wms.mapper.PurchaseOrderMapper;
+import com.hung.wms.mapper.StockMovementMapper;
 import com.hung.wms.enums.MovementType;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.InvalidStateException;
 import com.hung.wms.exception.ResourceNotFoundException;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderItemRequest;
-import com.hung.wms.model.request.purchaseorder.PurchaseOrderRequest;
-import com.hung.wms.model.response.purchaseorder.PurchaseOrderResponse;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderItemRequest;
+import com.hung.wms.dto.request.purchaseorder.PurchaseOrderRequest;
+import com.hung.wms.dto.response.purchaseorder.PurchaseOrderResponse;
 import com.hung.wms.repository.InventoryRepository;
 import com.hung.wms.repository.ProductRepository;
 import com.hung.wms.repository.PurchaseOrderRepository;
@@ -17,13 +17,13 @@ import com.hung.wms.repository.StockMovementRepository;
 import com.hung.wms.repository.SupplierRepository;
 import com.hung.wms.repository.UserRepository;
 import com.hung.wms.repository.WarehouseRepository;
-import com.hung.wms.repository.entity.ProductEntity;
-import com.hung.wms.repository.entity.PurchaseOrderEntity;
-import com.hung.wms.repository.entity.PurchaseOrderItemEntity;
-import com.hung.wms.repository.entity.StockMovementEntity;
-import com.hung.wms.repository.entity.SupplierEntity;
-import com.hung.wms.repository.entity.UserEntity;
-import com.hung.wms.repository.entity.WarehouseEntity;
+import com.hung.wms.entity.ProductEntity;
+import com.hung.wms.entity.PurchaseOrderEntity;
+import com.hung.wms.entity.PurchaseOrderItemEntity;
+import com.hung.wms.entity.StockMovementEntity;
+import com.hung.wms.entity.SupplierEntity;
+import com.hung.wms.entity.UserEntity;
+import com.hung.wms.entity.WarehouseEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-// Converter stubs are shared by every test; not every test reaches toItemEntity / toResponse
+// Mapper stubs are shared by every test; not every test reaches toItemEntity / toResponse
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("PurchaseOrderServiceImpl")
 class PurchaseOrderServiceImplTest {
@@ -86,10 +86,10 @@ class PurchaseOrderServiceImplTest {
     @Mock
     private StockMovementRepository stockMovementRepository;
     @Mock
-    private PurchaseOrderConverter purchaseOrderConverter;
-    // Real converter: toEntity only copies fields, so the saved stock movement can be asserted
+    private PurchaseOrderMapper purchaseOrderMapper;
+    // Real mapper: toEntity only copies fields, so the saved stock movement can be asserted
     @Spy
-    private StockMovementConverter stockMovementConverter = new StockMovementConverter();
+    private StockMovementMapper stockMovementMapper = new StockMovementMapper();
 
     @InjectMocks
     private PurchaseOrderServiceImpl purchaseOrderService;
@@ -98,10 +98,10 @@ class PurchaseOrderServiceImplTest {
     private final Principal principal = () -> USERNAME;
 
     @BeforeEach
-    void stubConverter() {
-        when(purchaseOrderConverter.toEntity(any(PurchaseOrderRequest.class)))
+    void stubMapper() {
+        when(purchaseOrderMapper.toEntity(any(PurchaseOrderRequest.class)))
                 .thenAnswer(invocation -> new PurchaseOrderEntity());
-        when(purchaseOrderConverter.toItemEntity(any(PurchaseOrderItemRequest.class)))
+        when(purchaseOrderMapper.toItemEntity(any(PurchaseOrderItemRequest.class)))
                 .thenAnswer(invocation -> {
                     PurchaseOrderItemRequest request = invocation.getArgument(0);
                     PurchaseOrderItemEntity item = new PurchaseOrderItemEntity();
@@ -109,7 +109,7 @@ class PurchaseOrderServiceImplTest {
                     item.setUnitCost(request.getUnitCost());
                     return item;
                 });
-        when(purchaseOrderConverter.toResponse(any(PurchaseOrderEntity.class))).thenReturn(convertedResponse);
+        when(purchaseOrderMapper.toResponse(any(PurchaseOrderEntity.class))).thenReturn(convertedResponse);
         when(purchaseOrderRepository.save(any(PurchaseOrderEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -482,7 +482,7 @@ class PurchaseOrderServiceImplTest {
         }
 
         @Test
-        @DisplayName("tồn tại -> trả response từ converter")
+        @DisplayName("tồn tại -> trả response từ mapper")
         void found() {
             // given
             PurchaseOrderEntity po = purchaseOrder(PurchaseOrderStatus.PENDING);
@@ -493,7 +493,7 @@ class PurchaseOrderServiceImplTest {
 
             // then
             assertThat(response).isSameAs(convertedResponse);
-            verify(purchaseOrderConverter).toResponse(po);
+            verify(purchaseOrderMapper).toResponse(po);
         }
     }
 

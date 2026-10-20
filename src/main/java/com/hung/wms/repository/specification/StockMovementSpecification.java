@@ -1,8 +1,8 @@
 package com.hung.wms.repository.specification;
 
 import com.hung.wms.enums.MovementType;
-import com.hung.wms.model.request.stockmovement.StockMovementSearchRequest;
-import com.hung.wms.repository.entity.StockMovementEntity;
+import com.hung.wms.dto.request.stockmovement.StockMovementSearchRequest;
+import com.hung.wms.entity.StockMovementEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 public class StockMovementSpecification {
