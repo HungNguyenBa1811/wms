@@ -1,6 +1,7 @@
 package com.hung.wms.service.impl;
 
 import com.hung.wms.converter.PurchaseOrderConverter;
+import com.hung.wms.converter.StockMovementConverter;
 import com.hung.wms.enums.MovementType;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.BadRequestException;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -83,6 +85,9 @@ class PurchaseOrderServiceImplTest {
     private StockMovementRepository stockMovementRepository;
     @Mock
     private PurchaseOrderConverter purchaseOrderConverter;
+    // Real converter: toEntity only copies fields, so the saved stock movement can be asserted
+    @Spy
+    private StockMovementConverter stockMovementConverter = new StockMovementConverter();
 
     @InjectMocks
     private PurchaseOrderServiceImpl purchaseOrderService;
