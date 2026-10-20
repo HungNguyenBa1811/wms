@@ -92,6 +92,20 @@ Hai tài khoản có sẵn để thử:
 | `admin` | `admin` | `ADMIN` |
 | `staff` | `staff` | `STAFF` |
 
+## Chạy test
+
+```bash
+./mvnw test
+```
+
+- Mặc định chạy trên profile `test` (H2 in-memory, MySQL mode, cấu hình ở `src/test/resources/application-test.yaml`), không cần MySQL và không cần `application-uat.yaml`
+- Gồm unit test service (JUnit 5 + Mockito), test controller bằng `@WebMvcTest` (status code, format `ErrorResponse`, 401 / 403) và `contextLoads`
+- Test concurrency (`src/test/java/com/hung/wms/concurrency`) gắn `@Tag("mysql")`, cần MySQL thật (row lock InnoDB) nên bị loại khỏi lần chạy mặc định. Chạy riêng khi MySQL đang bật và đã có `application-uat.yaml`:
+
+```bash
+./mvnw test -Pmysql-tests
+```
+
 ## Kiểm thử API bằng Postman
 
 Import file `postman/wms.postman_collection.json` vào Postman. Collection gồm:
@@ -332,4 +346,4 @@ Luồng xử lý: `Controller -> Service -> Repository -> Entity`. Business rule
 ## Chưa có
 
 - API quản lý user và đổi role
-- Unit test và integration test
+- Integration test chạy không cần MySQL (test concurrency hiện vẫn cần MySQL thật)
