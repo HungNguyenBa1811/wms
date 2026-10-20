@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 public class ProductResponse {
     private String id, productCode, name, description, categoryId;
     private BigDecimal price;
+    private LocalDate importedAt, expiryDate;
     private LocalDateTime createdAt;
     // Username of the logged-in user who created the row (JPA auditing), null if created without login
     private String createdBy;

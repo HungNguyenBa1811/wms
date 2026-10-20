@@ -173,6 +173,7 @@ Query param chung: `page` (bắt đầu từ 0), `size` (mặc định 20), `sor
 Cách so khớp filter:
 
 - Filter theo id, enum, giá: so khớp chính xác / theo khoảng
+- `expiryBefore=yyyy-MM-dd` (product): hạn sử dụng **trước** ngày này (không tính ngày đó), dùng để tìm hàng sắp hết hạn. Product không có hạn sử dụng không bao giờ khớp
 - `productCode`, `warehouseCode`: tìm theo **tiền tố** (`productCode=SEED` khớp `SEED-001`, `productCode=001` không khớp). Nhờ vậy MySQL dùng được unique index của cột mã
 - Các filter text còn lại (`name`, `description`, `location`, `phone`, `email`, `address`): tìm "chứa"
 - Không phân biệt hoa thường và không phân biệt dấu (`ha noi` khớp `Hà Nội`): dựa vào collation mặc định của MySQL `utf8mb4_0900_ai_ci`, không dùng `lower()`
@@ -181,7 +182,7 @@ Cách so khớp filter:
 | Endpoint | Filter | Sort mặc định |
 |---|---|---|
 | `/categories` | `name`, `description` | `createdAt,desc` |
-| `/products` | `name`, `productCode`, `categoryId`, `priceFrom`, `priceTo` | `createdAt,desc` |
+| `/products` | `name`, `productCode`, `categoryId`, `priceFrom`, `priceTo`, `expiryBefore` | `createdAt,desc` |
 | `/warehouses` | `warehouseCode`, `name`, `location` | `createdAt,desc` |
 | `/suppliers` | `name`, `phone`, `email`, `address` | `createdAt,desc` |
 | `/purchase-orders` | `status` (`PENDING`, `RECEIVED`), `supplierId`, `warehouseId` | `createdAt,desc` |
@@ -211,6 +212,29 @@ Product bắt buộc có `categoryId`; category đã xóa mềm không được 
 | POST | `/products` | Tạo sản phẩm |
 | PUT | `/products/{id}` | Cập nhật sản phẩm (field null được bỏ qua) |
 | DELETE | `/products/{id}` | Xóa sản phẩm, trả về 204 |
+
+Ngày nhập và hạn sử dụng (theo feedback mentor, lưu thẳng trên product):
+
+- `importedAt` (`yyyy-MM-dd`, không bắt buộc): ngày nhập. Không gửi khi tạo thì mặc định là hôm nay. Không được ở tương lai (400). Khác `createdAt` (thời điểm tạo bản ghi trong hệ thống)
+- `expiryDate` (`yyyy-MM-dd`, không bắt buộc): hạn sử dụng, `null` nghĩa là không hết hạn
+- `expiryDate` không được trước `importedAt` -> 400. Gửi cả 2 ngày thì Bean Validation báo lỗi ở `detail` (`expiryDateValid: ...`); PUT chỉ gửi 1 ngày thì service so với ngày đang lưu và trả 400 qua `BadRequestException`
+- Giới hạn: hạn sử dụng thật ra thuộc về **lô hàng** (cùng 1 product nhập 2 lần có 2 hạn khác nhau). Ở đây mỗi product chỉ có 1 hạn; tách theo lô (`inventory_lots`, xuất kho FEFO) là hướng B trong CHECKLIST, chưa làm
+
+Ví dụ:
+
+```json
+POST /api/products
+{
+  "productCode": "MILK-1L",
+  "name": "Sữa 1L",
+  "price": 1.20,
+  "categoryId": "...",
+  "importedAt": "2026-10-01",
+  "expiryDate": "2026-12-31"
+}
+```
+
+Response có thêm `importedAt`, `expiryDate`, `createdAt`, `createdBy`.
 
 ### Warehouse
 

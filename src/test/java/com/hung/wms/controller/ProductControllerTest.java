@@ -129,6 +129,35 @@ class ProductControllerTest extends ControllerSliceTestSupport {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/products expiryDate trước importedAt, importedAt ở tương lai -> 400")
+    void createInvalidDates() throws Exception {
+        // given
+        String body = """
+                {"productCode": "P-001", "name": "Milk", "price": 1.5, "categoryId": "category-1",
+                 "importedAt": "2999-01-10", "expiryDate": "2999-01-01"}
+                """;
+
+        // when / then
+        mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(errorResponse(400, "Bad Request", "Validation failed", "/api/products"))
+                .andExpect(jsonPath("$.detail", containsInAnyOrder(
+                        "importedAt: Imported date must not be in the future",
+                        "expiryDateValid: Expiry date must not be before imported date")));
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    @DisplayName("GET /api/products?expiryBefore=2026-13-01 -> 400")
+    void listWithInvalidExpiryBefore() throws Exception {
+        mockMvc.perform(get("/api/products").param("expiryBefore", "2026-13-01"))
+                .andExpect(errorResponse(400, "Bad Request", "Validation failed", "/api/products"))
+                .andExpect(jsonPath("$.detail[0]").value("expiryBefore: invalid value '2026-13-01'"));
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     @DisplayName("POST /api/products body hỏng -> 400 Request body is missing or malformed")
     void createMalformedBody() throws Exception {
         mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON).content("{\"price\": \"abc\"}"))

@@ -29,6 +29,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -273,6 +274,7 @@ abstract class ConcurrencyTestSupport {
         product.setProductCode("P-T-" + shortId());
         product.setName("Concurrency test product");
         product.setPrice(BigDecimal.TEN);
+        product.setImportedAt(LocalDate.now());
         product.setCategory(categoryRepository.findById(SEED_CATEGORY_ID).orElseThrow());
         return productRepository.save(product);
     }

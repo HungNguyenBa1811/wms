@@ -2,6 +2,7 @@ package com.hung.wms.service.impl;
 
 import com.hung.wms.mapper.ProductMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
+import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
@@ -23,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -57,6 +60,9 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
         }
+        if (productEntity.getImportedAt() == null)
+            productEntity.setImportedAt(LocalDate.now());
+        checkExpiryDate(productEntity);
         return productMapper.toResponse(productRepository.save(productEntity));
     }
 
@@ -76,6 +82,7 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategoryId()));
             productEntity.setCategory(category);
         }
+        checkExpiryDate(productEntity);
         return productMapper.toResponse(productEntity);
     }
 
@@ -107,5 +114,12 @@ public class ProductServiceImpl implements ProductService {
             throw new ResourceInUseException("Cannot delete product " + id + ": it is in a pending purchase order");
         productEntity.setIsDeleted(true);
         productRepository.save(productEntity);
+    }
+
+    // The request only validates the pair when both dates are sent. Here the dates are the final values after
+    // merging the request into the entity (create: importedAt defaults to today; PUT: one date may come from the DB)
+    private void checkExpiryDate(ProductEntity productEntity) {
+        if (productEntity.getExpiryDate() != null && productEntity.getExpiryDate().isBefore(productEntity.getImportedAt()))
+            throw new BadRequestException("Expiry date must not be before imported date");
     }
 }

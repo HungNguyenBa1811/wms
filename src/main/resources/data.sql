@@ -9,11 +9,12 @@ INSERT INTO categories (id, name, description, created_at, created_by, updated_a
     ('22222222-2222-2222-2222-222222222222', 'Furniture', 'Office and home furniture', NOW() - INTERVAL 30 DAY, 'admin', NOW() - INTERVAL 30 DAY, 'admin'),
     ('33333333-3333-3333-3333-333333333333', 'Grocery', 'Packaged food and beverages', NOW() - INTERVAL 30 DAY, 'admin', NOW() - INTERVAL 30 DAY, 'admin');
 
-INSERT INTO products (id, product_code, name, description, price, category_id, created_at, created_by, updated_at, updated_by) VALUES
+-- Seeded products do not expire (expiry_date NULL); Postman creates one with an expiry date to test the filter.
+INSERT INTO products (id, product_code, name, description, price, category_id, imported_at, created_at, created_by, updated_at, updated_by) VALUES
     ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'SEED-001', 'Wireless Mouse', 'Seeded product', 15.50,
-     '11111111-1111-1111-1111-111111111111', NOW(), 'admin', NOW(), 'admin'),
+     '11111111-1111-1111-1111-111111111111', CURDATE() - INTERVAL 30 DAY, NOW(), 'admin', NOW(), 'admin'),
     ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'SEED-002', 'Office Chair', 'Seeded product', 120.00,
-     '22222222-2222-2222-2222-222222222222', NOW(), 'admin', NOW(), 'admin');
+     '22222222-2222-2222-2222-222222222222', CURDATE() - INTERVAL 30 DAY, NOW(), 'admin', NOW(), 'admin');
 
 -- receivedBy is the logged-in user (taken from the JWT), not sent by the client.
 -- Passwords are BCrypt hashes of the username: login with admin / admin or staff / staff.

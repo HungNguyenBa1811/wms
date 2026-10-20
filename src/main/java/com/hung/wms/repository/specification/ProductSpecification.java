@@ -5,6 +5,7 @@ import com.hung.wms.entity.ProductEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class ProductSpecification {
     private ProductSpecification() {
@@ -17,7 +18,8 @@ public class ProductSpecification {
                 productCodeStartsWith(productSearchRequest.getProductCode()),
                 hasCategory(productSearchRequest.getCategoryId()),
                 priceFrom(productSearchRequest.getPriceFrom()),
-                priceTo(productSearchRequest.getPriceTo())
+                priceTo(productSearchRequest.getPriceTo()),
+                expiryBefore(productSearchRequest.getExpiryBefore())
         );
     }
 
@@ -44,6 +46,11 @@ public class ProductSpecification {
     public static Specification<ProductEntity> priceFrom(BigDecimal priceFrom) {
         if (priceFrom == null) return Specification.unrestricted();
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("price"), priceFrom);
+    }
+
+    public static Specification<ProductEntity> expiryBefore(LocalDate expiryBefore) {
+        if (expiryBefore == null) return Specification.unrestricted();
+        return (root, query, cb) -> cb.lessThan(root.get("expiryDate"), expiryBefore);
     }
 
     public static Specification<ProductEntity> priceTo(BigDecimal priceTo) {

@@ -2,6 +2,7 @@ package com.hung.wms.service.impl;
 
 import com.hung.wms.mapper.ProductMapper;
 import com.hung.wms.enums.PurchaseOrderStatus;
+import com.hung.wms.exception.BadRequestException;
 import com.hung.wms.exception.ResourceDuplicateException;
 import com.hung.wms.exception.ResourceInUseException;
 import com.hung.wms.exception.ResourceNotFoundException;
@@ -23,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -108,11 +110,62 @@ class ProductServiceImplTest {
             assertThat(entity.getCategory()).isSameAs(category);
             assertThat(result).isSameAs(response);
         }
+
+        @Test
+        @DisplayName("không gửi importedAt -> mặc định hôm nay")
+        void importedAtDefaultsToToday() {
+            // given
+            ProductRequest request = request("P-001", CATEGORY_ID);
+            ProductEntity entity = new ProductEntity();
+            when(productMapper.toEntity(request)).thenReturn(entity);
+            when(productRepository.existsByProductCode("P-001")).thenReturn(false);
+            when(categoryRepository.findByIdAndIsDeletedFalse(CATEGORY_ID)).thenReturn(Optional.of(category()));
+            when(productRepository.save(entity)).thenReturn(entity);
+
+            // when
+            productService.createProduct(request);
+
+            // then
+            assertThat(entity.getImportedAt()).isEqualTo(LocalDate.now());
+        }
+
+        @Test
+        @DisplayName("chỉ gửi expiryDate trong quá khứ (importedAt mặc định hôm nay) -> BadRequestException (400), không lưu")
+        void expiryBeforeDefaultImportedAt() {
+            // given
+            ProductRequest request = request("P-001", CATEGORY_ID);
+            ProductEntity entity = new ProductEntity();
+            entity.setExpiryDate(LocalDate.now().minusDays(1));
+            when(productMapper.toEntity(request)).thenReturn(entity);
+            when(productRepository.existsByProductCode("P-001")).thenReturn(false);
+            when(categoryRepository.findByIdAndIsDeletedFalse(CATEGORY_ID)).thenReturn(Optional.of(category()));
+
+            // when / then
+            assertThatThrownBy(() -> productService.createProduct(request))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessage("Expiry date must not be before imported date");
+            verify(productRepository, never()).save(any());
+        }
     }
 
     @Nested
     @DisplayName("updateProduct")
     class Update {
+        @Test
+        @DisplayName("PUT chỉ gửi expiryDate, trước importedAt đang lưu -> BadRequestException (400)")
+        void expiryBeforeStoredImportedAt() {
+            // given: modelMapper is a mock, so the entity already holds the merged values
+            ProductEntity entity = product();
+            entity.setImportedAt(LocalDate.of(2026, 1, 10));
+            entity.setExpiryDate(LocalDate.of(2026, 1, 1));
+            when(productRepository.findByIdAndIsDeletedFalseForUpdate(PRODUCT_ID)).thenReturn(Optional.of(entity));
+            when(productRepository.existsByProductCodeAndIdNot(null, PRODUCT_ID)).thenReturn(false);
+
+            // when / then
+            assertThatThrownBy(() -> productService.updateProduct(PRODUCT_ID, new ProductRequest()))
+                    .isInstanceOf(BadRequestException.class);
+        }
+
         @Test
         @DisplayName("không tồn tại hoặc đã xóa mềm -> ResourceNotFoundException (404)")
         void notFound() {

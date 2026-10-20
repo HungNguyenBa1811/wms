@@ -930,6 +930,14 @@
               "  pm.expect(body.name).to.eql('Test product');",
               "  pm.expect(body.categoryId).to.eql(pm.collectionVariables.get('categoryId'));",
               "});",
+              "pm.test('import / expiry dates saved', () => {",
+              "  pm.expect(body.importedAt).to.eql('2026-01-01');",
+              "  pm.expect(body.expiryDate).to.eql('2030-12-31');",
+              "});",
+              "pm.test('createdBy is the logged-in admin, createdAt is set', () => {",
+              "  pm.expect(body.createdBy).to.eql(pm.collectionVariables.get('adminUsername'));",
+              "  pm.expect(body.createdAt).to.be.a('string');",
+              "});",
               "pm.collectionVariables.set('productId', body.id);"
             ]
           }
@@ -946,7 +954,7 @@
         "url": "{{baseUrl}}/api/products",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"productCode\": \"P-{{$randomInt}}\",\n  \"name\": \"Test product\",\n  \"description\": \"Created from Postman\",\n  \"price\": 10.50,\n  \"categoryId\": \"{{categoryId}}\"\n}"
+          "raw": "{\n  \"productCode\": \"P-{{$randomInt}}\",\n  \"name\": \"Test product\",\n  \"description\": \"Created from Postman\",\n  \"price\": 10.50,\n  \"categoryId\": \"{{categoryId}}\",\n  \"importedAt\": \"2026-01-01\",\n  \"expiryDate\": \"2030-12-31\"\n}"
         }
       }
     },
@@ -958,7 +966,8 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('status is 200', () => pm.response.to.have.status(200));"
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('createdBy still admin', () => pm.expect(pm.response.json().createdBy).to.eql(pm.collectionVariables.get('adminUsername')));"
             ]
           }
         }
@@ -966,6 +975,36 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/api/products/{{productId}}"
+      }
+    },
+    {
+      "name": "Products - filter expiryBefore",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('contains the created product', () => {",
+              "  pm.expect(body.content.map(p => p.id)).to.include(pm.collectionVariables.get('productId'));",
+              "});",
+              "pm.test('every product expires before 2031-01-01, products without expiry are excluded', () => {",
+              "  body.content.forEach(p => {",
+              "    pm.expect(p.expiryDate).to.be.a('string');",
+              "    pm.expect(p.expiryDate < '2031-01-01').to.be.true;",
+              "  });",
+              "  pm.expect(body.content.map(p => p.productCode)).to.not.include('SEED-001');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products?expiryBefore=2031-01-01&size=100",
+        "header": []
       }
     },
     {
@@ -1364,6 +1403,68 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"price\": -5\n}"
+            }
+          }
+        },
+        {
+          "name": "Create - expiryDate before importedAt -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detail names the date rule', () => {",
+                  "  pm.expect(pm.response.json().detail).to.include('expiryDateValid: Expiry date must not be before imported date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/products",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"P-{{$randomInt}}\",\n  \"name\": \"Expired milk\",\n  \"price\": 1.20,\n  \"categoryId\": \"{{categoryId}}\",\n  \"importedAt\": \"2026-03-10\",\n  \"expiryDate\": \"2026-03-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update - expiryDate before stored importedAt -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('message explains the date rule', () => {",
+                  "  pm.expect(pm.response.json().message).to.eql('Expiry date must not be before imported date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/products/{{seededProductId}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expiryDate\": \"2000-01-01\"\n}"
             }
           }
         }
@@ -1883,6 +1984,7 @@
                   "const body = pm.response.json();",
                   "pm.test('has id', () => pm.expect(body.id).to.be.a('string'));",
                   "pm.test('name saved', () => pm.expect(body.name).to.eql('Toys'));",
+                  "pm.test('createdBy is the logged-in admin', () => pm.expect(body.createdBy).to.eql(pm.collectionVariables.get('adminUsername')));",
                   "pm.collectionVariables.set('newCategoryId', body.id);"
                 ]
               }
