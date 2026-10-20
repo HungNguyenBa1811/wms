@@ -26,7 +26,7 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<PageResponse<CategoryResponse>> getCategory(
             @Valid CategorySearchRequest categorySearchRequest,
-            @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PageResponse<CategoryResponse> result = categoryService.findAllCategories(categorySearchRequest, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }

@@ -3,7 +3,6 @@ package com.hung.wms.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,21 +10,19 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "categories")
-public class CategoryEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
+@Table(
+        name = "categories",
+        indexes = {
+                // GET list: WHERE is_deleted = 0 ORDER BY created_at DESC LIMIT n, same as products
+                @Index(name = "idx_category_deleted_created", columnList = "is_deleted, created_at")
+        }
+)
+public class CategoryEntity extends SoftDeleteEntity {
     @Column(name = "name", unique = true, nullable = false)
     private String name;
 
     @Column(name = "description")
     private String description;
-
-    @ColumnDefault("false")
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "category")
     private List<ProductEntity> products = new ArrayList<>();

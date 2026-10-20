@@ -21,11 +21,7 @@ import java.util.List;
                 @Index(name = "idx_purchase_order_status_created", columnList = "status, created_at")
         }
 )
-public class PurchaseOrderEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
+public class PurchaseOrderEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "supplier_id", nullable = false)
     private SupplierEntity supplier;
@@ -38,9 +34,6 @@ public class PurchaseOrderEntity {
     @Column(name = "status", nullable = false)
     private PurchaseOrderStatus status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @Column(name = "received_at")
     private LocalDateTime receivedAt;
 
@@ -50,9 +43,4 @@ public class PurchaseOrderEntity {
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PurchaseOrderItemEntity> purchaseOrderItems = new ArrayList<>();
-
-    @PrePersist
-    void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

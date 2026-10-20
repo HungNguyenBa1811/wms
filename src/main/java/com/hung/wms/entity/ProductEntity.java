@@ -3,10 +3,8 @@ package com.hung.wms.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,11 +18,7 @@ import java.util.List;
                 @Index(name = "idx_product_deleted_created", columnList = "is_deleted, created_at")
         }
 )
-public class ProductEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
+public class ProductEntity extends SoftDeleteEntity {
     @Column(name = "product_code", unique = true, nullable = false)
     private String productCode;
 
@@ -41,13 +35,6 @@ public class ProductEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @ColumnDefault("false")
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
-
     @OneToMany(mappedBy = "product")
     private List<InventoryEntity> inventories = new ArrayList<>();
 
@@ -56,9 +43,4 @@ public class ProductEntity {
 
     @OneToMany(mappedBy = "product")
     private List<StockMovementEntity> stockMovements = new ArrayList<>();
-
-    @PrePersist
-    void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

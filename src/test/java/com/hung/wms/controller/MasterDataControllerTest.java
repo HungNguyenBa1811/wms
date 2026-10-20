@@ -133,7 +133,7 @@ class MasterDataControllerTest extends ControllerSliceTestSupport {
     // ---------- Supplier ----------
 
     @Test
-    @DisplayName("GET /api/suppliers -> 200, sort mặc định name ASC")
+    @DisplayName("GET /api/suppliers -> 200, sort mặc định createdAt DESC")
     void listSuppliers() throws Exception {
         // given
         SupplierResponse supplier = new SupplierResponse();
@@ -145,7 +145,7 @@ class MasterDataControllerTest extends ControllerSliceTestSupport {
         mockMvc.perform(get("/api/suppliers"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].name").value("ACME"));
-        verify(supplierService).findAllSuppliers(any(), eq(PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "name"))));
+        verify(supplierService).findAllSuppliers(any(), eq(PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"))));
     }
 
     @Test

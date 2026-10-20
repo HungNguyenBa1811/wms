@@ -10,11 +10,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "purchase_order_items")
-public class PurchaseOrderItemEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
+public class PurchaseOrderItemEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "purchase_order_id", nullable = false)
     private PurchaseOrderEntity purchaseOrder;

@@ -26,7 +26,7 @@ public class SupplierController {
     @GetMapping
     public ResponseEntity<PageResponse<SupplierResponse>> getSupplier(
             @Valid SupplierSearchRequest supplierSearchRequest,
-            @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PageResponse<SupplierResponse> result = supplierService.findAllSuppliers(supplierSearchRequest, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }

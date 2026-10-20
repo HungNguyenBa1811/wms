@@ -3,7 +3,6 @@ package com.hung.wms.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +10,14 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(name = "suppliers")
-public class SupplierEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
+@Table(
+        name = "suppliers",
+        indexes = {
+                // GET list: WHERE is_deleted = 0 ORDER BY created_at DESC LIMIT n, same as products
+                @Index(name = "idx_supplier_deleted_created", columnList = "is_deleted, created_at")
+        }
+)
+public class SupplierEntity extends SoftDeleteEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -28,10 +29,6 @@ public class SupplierEntity {
 
     @Column(name = "address")
     private String address;
-
-    @ColumnDefault("false")
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "supplier")
     private List<PurchaseOrderEntity> purchaseOrders = new ArrayList<>();

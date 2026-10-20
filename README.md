@@ -180,10 +180,10 @@ Cách so khớp filter:
 
 | Endpoint | Filter | Sort mặc định |
 |---|---|---|
-| `/categories` | `name`, `description` | `name,asc` |
+| `/categories` | `name`, `description` | `createdAt,desc` |
 | `/products` | `name`, `productCode`, `categoryId`, `priceFrom`, `priceTo` | `createdAt,desc` |
 | `/warehouses` | `warehouseCode`, `name`, `location` | `createdAt,desc` |
-| `/suppliers` | `name`, `phone`, `email`, `address` | `name,asc` |
+| `/suppliers` | `name`, `phone`, `email`, `address` | `createdAt,desc` |
 | `/purchase-orders` | `status` (`PENDING`, `RECEIVED`), `supplierId`, `warehouseId` | `createdAt,desc` |
 | `/inventory` | `warehouseId`, `productId` | `updatedAt,desc` |
 | `/stock-movements` | `warehouseId`, `productId`, `movementType` (`IN`, `OUT`) | `createdAt,desc` |
@@ -289,6 +289,18 @@ Không có body. Người nhận (`receivedBy`) là user đang đăng nhập, l�
 
 Inventory và Stock Movement **không có API ghi**. Đây là dữ liệu phát sinh từ nghiệp vụ (receive PO). Nếu cho phép client tự tạo stock movement thì client có thể tự tăng tồn kho tùy ý.
 
+### Base entity và người tạo / thời gian tạo
+
+Mọi entity kế thừa `BaseEntity` (`@MappedSuperclass`): `id` (UUID), `createdAt`, `createdBy`, `updatedAt`, `updatedBy`. Dữ liệu nền xóa mềm (Category / Product / Warehouse / Supplier) kế thừa thêm `SoftDeleteEntity` (`isDeleted`).
+
+Các cột audit được điền tự động bằng Spring Data JPA Auditing (`@EnableJpaAuditing` trong `JpaAuditingConfig`, `AuditingEntityListener` trên `BaseEntity`):
+
+- `createdAt` / `updatedAt`: thời điểm insert / update
+- `createdBy` / `updatedBy`: **username** của người đang đăng nhập (`SecurityAuditorAware` đọc từ `SecurityContext`, chính là `sub` của JWT). Lưu username (String) thay vì FK tới `users`: không cần JOIN, và hợp với hướng tách service sau này (service khác không có bảng `users`)
+- Không có người đăng nhập (đăng ký tài khoản, `data.sql`, test gọi thẳng service) -> `createdBy` = `null`. Không dùng giá trị giả như `"system"` để không trùng với username thật
+
+Response của category, product, warehouse, supplier, purchase order (và item), inventory, stock movement đều có `createdAt` và `createdBy`. `StockMovement.performedBy` (id user, FK) vẫn giữ vì là dữ liệu nghiệp vụ của API; `PurchaseOrder.receivedBy` / `receivedAt` khác nghĩa với `createdBy` (người tạo PO khác người nhận hàng).
+
 ## Business rules
 
 ### Vòng đời Purchase Order
@@ -321,16 +333,17 @@ PO được đọc bằng `PESSIMISTIC_WRITE` lock, nên hai request receive cù
 Receive cộng tồn kho cho mọi item của PO bằng **1 câu upsert** (`InventoryRepositoryCustomImpl.addQuantities`):
 
 ```sql
-INSERT INTO inventory (id, warehouse_id, product_id, quantity, updated_at)
-VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), ...
+INSERT INTO inventory (id, warehouse_id, product_id, quantity, created_at, created_by, updated_at, updated_by)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?), ...
 AS incoming
-ON DUPLICATE KEY UPDATE quantity = inventory.quantity + incoming.quantity, updated_at = incoming.updated_at
+ON DUPLICATE KEY UPDATE quantity = inventory.quantity + incoming.quantity,
+                        updated_at = incoming.updated_at, updated_by = incoming.updated_by
 ```
 
 - Dòng inventory `(warehouse_id, product_id)` chưa có thì được tạo, có rồi thì cộng thêm. MySQL tự kiểm tra unique key `uk_inventory_warehouse_product`: transaction đầu INSERT dòng mới, transaction sau gặp trùng key thì chờ lock của dòng đó rồi cộng vào giá trị mới nhất. Không lost update, không trùng dòng, không lỗi 500.
 - Cách cũ (`SELECT ... FOR UPDATE` rồi INSERT nếu chưa có) bị race khi dòng inventory chưa tồn tại: không có dòng để lock, hai transaction cùng INSERT và MySQL báo deadlock (gap lock) hoặc trùng unique.
 - Các dòng VALUES được sắp theo `product_id`, nên mọi transaction lock theo cùng thứ tự, tránh deadlock khi hai PO nhiều item cùng chạm các product giống nhau.
-- Là native SQL nên `id` (UUID) và `updated_at` được tạo trong Java, không qua `@GeneratedValue` / `@UpdateTimestamp`. Cú pháp `AS incoming` cần MySQL 8.0.19 trở lên (`VALUES(col)` đã deprecated).
+- Là native SQL nên `id` (UUID) và các cột audit (`created_at` / `created_by` khi tạo dòng mới, `updated_at` / `updated_by`) được gán trong Java, không qua `@GeneratedValue` / JPA Auditing. Cú pháp `AS incoming` cần MySQL 8.0.19 trở lên (`VALUES(col)` đã deprecated).
 
 Tạo PO lock tất cả product của request bằng 1 query (`id IN (...) ORDER BY id FOR UPDATE`), sắp theo id cùng lý do trên. Sau khi lock xong không còn SELECT nào nữa, nên các INSERT / UPDATE còn lại (stock movement, item, PO) được gửi thành JDBC batch lúc commit.
 

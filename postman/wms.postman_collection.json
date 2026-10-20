@@ -1592,7 +1592,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/suppliers"
+            "url": "{{baseUrl}}/api/suppliers?sort=name,asc"
           }
         },
         {
@@ -1787,7 +1787,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/categories"
+            "url": "{{baseUrl}}/api/categories?sort=name,asc"
           }
         },
         {

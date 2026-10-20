@@ -13,6 +13,8 @@ import java.util.List;
 public class PurchaseOrderResponse {
     private String id, supplierId, warehouseId, status;
     private LocalDateTime createdAt;
+    // Username of the logged-in user who created the row (JPA auditing), null if created without login
+    private String createdBy;
     private LocalDateTime receivedAt;
     private UserResponse receivedBy;
     private List<PurchaseOrderItemResponse> items = new ArrayList<>();

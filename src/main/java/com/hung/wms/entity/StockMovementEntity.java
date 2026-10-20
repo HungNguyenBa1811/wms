@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @Entity
@@ -19,11 +17,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_stock_movement_created", columnList = "created_at")
         }
 )
-public class StockMovementEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
-
+public class StockMovementEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private ProductEntity product;
@@ -32,6 +26,8 @@ public class StockMovementEntity {
     @JoinColumn(name = "warehouse_id", nullable = false)
     private WarehouseEntity warehouse;
 
+    // Same person as createdBy (the user who received the PO). Kept because it is a real FK to users
+    // (UserEntity.stockMovements) and part of the API (performedBy = user id); createdBy is the plain audit username
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "performed_by", nullable = false)
     private UserEntity performedBy;
@@ -45,12 +41,4 @@ public class StockMovementEntity {
 
     @Column(name = "reason", nullable = false)
     private String reason;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }
