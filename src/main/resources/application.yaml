@@ -8,27 +8,5 @@ spring:
   profiles:
     active: uat
 
-  sql:
-    init:
-      mode: always
-
-  jpa:
-    defer-datasource-initialization: true
-    properties:
-      hibernate:
-        format_sql: true
-        # Dev only: logs "N JDBC statements executed" once per session (per request with open-in-view)
-        generate_statistics: true
-
-    hibernate:
-      ddl-auto: create
-
-    show-sql: true
-
-logging:
-  level:
-    # Dev only: prints the "Session Metrics { ... N JDBC statements }" block enabled by generate_statistics
-    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: debug
-
 jwt:
   expiration: 10d

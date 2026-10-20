@@ -1,6 +1,7 @@
 package com.hung.wms.service.impl;
 
 import com.hung.wms.converter.PurchaseOrderConverter;
+import com.hung.wms.converter.StockMovementConverter;
 import com.hung.wms.enums.MovementType;
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.exception.BadRequestException;
@@ -59,6 +60,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Autowired
     private PurchaseOrderConverter purchaseOrderConverter;
 
+    @Autowired
+    private StockMovementConverter stockMovementConverter;
+
     @Override
     @Transactional
     public PurchaseOrderResponse createPurchaseOrder(PurchaseOrderRequest request) {
@@ -114,14 +118,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
             inventoryRepository.save(inventory);
 
-            StockMovementEntity stockMovement = new StockMovementEntity();
-            stockMovement.setProduct(product);
-            stockMovement.setWarehouse(warehouse);
-            stockMovement.setPerformedBy(receivedBy);
-            stockMovement.setMovementType(MovementType.IN);
-            stockMovement.setQuantity(item.getQuantity());
-            stockMovement.setReason("Receive purchase order " + purchaseOrder.getId());
-            stockMovementRepository.save(stockMovement);
+            stockMovementRepository.save(stockMovementConverter.toEntity(
+                    product, warehouse, receivedBy, MovementType.IN, item.getQuantity(),
+                    "Receive purchase order " + purchaseOrder.getId()));
         }
 
         purchaseOrder.setStatus(PurchaseOrderStatus.RECEIVED);

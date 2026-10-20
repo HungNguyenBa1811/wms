@@ -4,6 +4,27 @@ spring:
     username: <username>
     password: <password>
 
+  # Dev only: recreates the schema and reloads data.sql on every startup
+  sql:
+    init:
+      mode: always
+
+  jpa:
+    defer-datasource-initialization: true
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        # Dev only: logs "N JDBC statements executed" once per session (per request with open-in-view)
+        generate_statistics: true
+    hibernate:
+      ddl-auto: create
+
+logging:
+  level:
+    # Dev only: prints the "Session Metrics { ... N JDBC statements }" block enabled by generate_statistics
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: debug
+
 jwt:
   # Base64 of at least 32 random bytes. Generate with: openssl rand -base64 64
   secret: <base64-secret>

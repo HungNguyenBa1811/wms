@@ -6,6 +6,8 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 
+// Viet chung ra 1
+
 public class ProductSpecification {
     private ProductSpecification() {
     }
