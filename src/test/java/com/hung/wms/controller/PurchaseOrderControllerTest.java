@@ -17,6 +17,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.security.Principal;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -119,17 +120,19 @@ class PurchaseOrderControllerTest extends ControllerSliceTestSupport {
     }
 
     @Test
-    @DisplayName("POST /api/purchase-orders/{id}/items vào PO RECEIVED -> 409")
+    @DisplayName("POST /api/purchase-orders/{id}/items vào PO RECEIVED -> 409, data có status hiện tại")
     void addItemToReceivedPurchaseOrder() throws Exception {
         // given
         when(purchaseOrderService.addPurchaseOrderItem(eq(PO_ID), any(PurchaseOrderItemRequest.class)))
-                .thenThrow(new InvalidStateException("Cannot add item to purchase order in status: RECEIVED"));
+                .thenThrow(new InvalidStateException("Cannot add item: purchase order is not PENDING", Map.of("purchaseOrderId", PO_ID, "status", "RECEIVED")));
 
         // when / then
         mockMvc.perform(post("/api/purchase-orders/{id}/items", PO_ID).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productId\": \"product-2\", \"quantity\": 1, \"unitCost\": 0}"))
-                .andExpect(errorResponse(409, "Conflict", "Cannot add item to purchase order in status: RECEIVED",
-                        "/api/purchase-orders/po-1/items"));
+                .andExpect(errorResponse(409, "Conflict", "Cannot add item: purchase order is not PENDING",
+                        "/api/purchase-orders/po-1/items"))
+                .andExpect(jsonPath("$.data.purchaseOrderId").value(PO_ID))
+                .andExpect(jsonPath("$.data.status").value("RECEIVED"));
     }
 
     @Test
@@ -149,16 +152,18 @@ class PurchaseOrderControllerTest extends ControllerSliceTestSupport {
     }
 
     @Test
-    @DisplayName("POST /api/purchase-orders/{id}/receive lần hai -> 409")
+    @DisplayName("POST /api/purchase-orders/{id}/receive lần hai -> 409, data có status hiện tại")
     void receiveTwice() throws Exception {
         // given
         when(purchaseOrderService.receivePurchaseOrder(eq(PO_ID), any(Principal.class)))
-                .thenThrow(new InvalidStateException("Cannot receive purchase order in status: RECEIVED"));
+                .thenThrow(new InvalidStateException("Cannot receive: purchase order is not PENDING", Map.of("purchaseOrderId", PO_ID, "status", "RECEIVED")));
 
         // when / then
         mockMvc.perform(post("/api/purchase-orders/{id}/receive", PO_ID))
-                .andExpect(errorResponse(409, "Conflict", "Cannot receive purchase order in status: RECEIVED",
-                        "/api/purchase-orders/po-1/receive"));
+                .andExpect(errorResponse(409, "Conflict", "Cannot receive: purchase order is not PENDING",
+                        "/api/purchase-orders/po-1/receive"))
+                .andExpect(jsonPath("$.data.purchaseOrderId").value(PO_ID))
+                .andExpect(jsonPath("$.data.status").value("RECEIVED"));
     }
 
     @Test

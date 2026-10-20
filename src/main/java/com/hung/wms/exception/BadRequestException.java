@@ -1,7 +1,10 @@
 package com.hung.wms.exception;
 
-public class BadRequestException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+// 400: input is valid in format but breaks a rule that needs DB data (Bean Validation covers pure input)
+public class BadRequestException extends AppException {
     public BadRequestException(String message) {
-        super(message);
+        super(HttpStatus.BAD_REQUEST, message);
     }
 }

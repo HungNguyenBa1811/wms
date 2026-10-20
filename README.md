@@ -375,27 +375,33 @@ Test concurrency (`./mvnw test -Pmysql-tests`, cần MySQL thật) chạy nhiề
 
 ## Xử lý lỗi
 
-Mọi lỗi nghiệp vụ được `GlobalExceptionHandler` chuyển thành response thống nhất:
+Mọi lỗi nghiệp vụ là `AppException` (mang `HttpStatus`, `message` và `data` tùy chọn). `GlobalExceptionHandler` có **1 handler** cho `AppException`: status lấy từ exception, ghi ra response thống nhất:
 
 ```json
 {
+  "timestamp": "2026-10-20T10:00:00",
   "status": 409,
   "error": "Conflict",
-  "message": "Cannot receive purchase order in status: RECEIVED",
-  "path": "/api/purchase-orders/.../receive"
+  "message": "Cannot receive: purchase order is not PENDING",
+  "path": "/api/purchase-orders/.../receive",
+  "detail": [],
+  "data": { "purchaseOrderId": "...", "status": "RECEIVED" }
 }
 ```
 
-| Exception | HTTP status | Khi nào |
-|---|---|---|
-| `ResourceNotFoundException` | 404 | Resource được tham chiếu không tồn tại |
-| `BadRequestException` | 400 | Dữ liệu đầu vào không hợp lệ |
-| `InvalidStateException` | 409 | Trạng thái hiện tại không cho phép thao tác |
+- `detail`: danh sách lỗi theo field khi validate input thất bại (`field: message`), rỗng với lỗi nghiệp vụ
+- `data`: chỉ có khi exception mang dữ liệu (hiện tại: 409 khi thêm item / receive PO không còn `PENDING` trả status hiện tại), không có thì field này không xuất hiện trong JSON
+- 5 exception bên dưới là lớp con mỏng của `AppException`, chỉ cố định status, nên service vẫn viết `throw new ResourceNotFoundException("...")`. Case mới cùng status không cần class mới: `throw new AppException(HttpStatus.XXX, "...", data)`
+
+| `ResourceNotFoundException` | 404 | Resource được tham chiếu không tồn tại (kể cả user trong token đã bị xóa khi receive PO) |
+| `BadRequestException` | 400 | Dữ liệu đúng định dạng nhưng sai quy tắc cần dữ liệu DB (vd PUT `expiryDate` trước `importedAt` đang lưu, receive PO rỗng) |
+| `InvalidStateException` | 409 | Trạng thái hiện tại không cho phép thao tác, `data` có status hiện tại của PO |
 | `ResourceDuplicateException` | 409 | Trùng dữ liệu unique (ví dụ `warehouseCode`, `name` của category) |
 | `ResourceInUseException` | 409 | Xóa resource đang được dùng (category còn product, product / warehouse còn tồn kho, supplier / product trong PO `PENDING`) |
 | `BadCredentialsException` | 401 | Login sai username hoặc password, message luôn là `Invalid username or password` |
 | Thiếu / sai token | 401 | Trả bởi `SecurityErrorHandler` trước khi vào controller, message `Authentication is required` |
 | Không đủ quyền | 403 | `STAFF` gọi endpoint chỉ dành cho `ADMIN`, message `You do not have permission to access this resource` |
+| `AccessDeniedException` | 403 | Bị từ chối bên trong controller / service (vd `@PreAuthorize` sau này), cùng message như trên thay vì rơi vào 500 |
 | Lỗi khác | 500 | Lỗi không lường trước, có ghi log |
 
 ## Cấu trúc project

@@ -25,6 +25,7 @@ import com.hung.wms.service.PurchaseOrderService;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,7 +97,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
         if (purchaseOrder.getStatus() != PurchaseOrderStatus.PENDING)
-            throw new InvalidStateException("Cannot add item to purchase order in status: " + purchaseOrder.getStatus());
+            throw new InvalidStateException("Cannot add item: purchase order is not PENDING", statusData(purchaseOrder));
         addItem(purchaseOrder, request,
                 () -> productRepository.findByIdAndIsDeletedFalseForUpdate(request.getProductId()));
         return purchaseOrderMapper.toResponse(purchaseOrderRepository.save(purchaseOrder));
@@ -110,13 +110,13 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
         if (purchaseOrder.getStatus() != PurchaseOrderStatus.PENDING)
-            throw new InvalidStateException("Cannot receive purchase order in status: " + purchaseOrder.getStatus());
+            throw new InvalidStateException("Cannot receive: purchase order is not PENDING", statusData(purchaseOrder));
         if (purchaseOrder.getPurchaseOrderItems().isEmpty())
             throw new BadRequestException("Cannot receive purchase order without items");
         String currentUsername = principal.getName();
         UserEntity receivedBy = userRepository
                 .findByUsername(currentUsername)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + currentUsername));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUsername));
         WarehouseEntity warehouse = purchaseOrder.getWarehouse();
         // 1 statement for all items: INSERT ... ON DUPLICATE KEY UPDATE adds to the existing row or creates it.
         // Atomic in MySQL, so two receives creating the same (warehouse, product) row at the same time no longer
@@ -182,5 +182,13 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private Map<String, Integer> quantityByProduct(List<PurchaseOrderItemEntity> items) {
         return items.stream()
                 .collect(Collectors.toMap(item -> item.getProduct().getId(), PurchaseOrderItemEntity::getQuantity, Integer::sum));
+    }
+
+    // ErrorResponse.data of the 409: the client reads the current status instead of parsing the message
+    private Map<String, Object> statusData(PurchaseOrderEntity purchaseOrder) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("purchaseOrderId", purchaseOrder.getId());
+        data.put("status", purchaseOrder.getStatus());
+        return data;
     }
 }

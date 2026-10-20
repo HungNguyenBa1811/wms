@@ -1,7 +1,10 @@
 package com.hung.wms.exception;
 
-public class ResourceDuplicateException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+// 409: a unique value is already used (code, name, username, ...)
+public class ResourceDuplicateException extends AppException {
     public ResourceDuplicateException(String message) {
-        super(message);
+        super(HttpStatus.CONFLICT, message);
     }
 }

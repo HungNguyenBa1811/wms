@@ -25,7 +25,7 @@ import com.hung.wms.entity.SupplierEntity;
 import com.hung.wms.entity.UserEntity;
 import com.hung.wms.entity.WarehouseEntity;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -263,7 +263,7 @@ class PurchaseOrderServiceImplTest {
         }
 
         @Test
-        @DisplayName("PO đã RECEIVED -> InvalidStateException (409) kèm status hiện tại, không tra product")
+        @DisplayName("PO đã RECEIVED -> InvalidStateException (409) kèm status hiện tại trong data, không tra product")
         void receivedPurchaseOrderRejectsNewItem() {
             // given
             when(purchaseOrderRepository.findByIdForUpdate(PO_ID))
@@ -272,7 +272,8 @@ class PurchaseOrderServiceImplTest {
             // when / then
             assertThatThrownBy(() -> purchaseOrderService.addPurchaseOrderItem(PO_ID, itemRequest(PRODUCT_A, 1, "1.00")))
                     .isInstanceOf(InvalidStateException.class)
-                    .hasMessageContaining("RECEIVED");
+                    .extracting("data").asInstanceOf(InstanceOfAssertFactories.MAP)
+                    .containsEntry("status", PurchaseOrderStatus.RECEIVED);
             verifyNoInteractions(productRepository);
             verify(purchaseOrderRepository, never()).save(any());
         }
@@ -327,7 +328,7 @@ class PurchaseOrderServiceImplTest {
         }
 
         @Test
-        @DisplayName("PO đã RECEIVED -> InvalidStateException (409), không đụng tồn kho")
+        @DisplayName("PO đã RECEIVED -> InvalidStateException (409) kèm status hiện tại trong data, không đụng tồn kho")
         void alreadyReceived() {
             // given
             PurchaseOrderEntity po = purchaseOrder(PurchaseOrderStatus.RECEIVED);
@@ -337,7 +338,8 @@ class PurchaseOrderServiceImplTest {
             // when / then
             assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrder(PO_ID, principal))
                     .isInstanceOf(InvalidStateException.class)
-                    .hasMessageContaining("RECEIVED");
+                    .extracting("data").asInstanceOf(InstanceOfAssertFactories.MAP)
+                    .containsEntry("status", PurchaseOrderStatus.RECEIVED);
             verifyNoInteractions(inventoryRepository, stockMovementRepository, userRepository);
             verify(purchaseOrderRepository, never()).save(any());
         }
@@ -374,8 +376,6 @@ class PurchaseOrderServiceImplTest {
         }
 
         @Test
-        @Disabled("BUG: PurchaseOrderServiceImpl.receivePurchaseOrder ném UsernameNotFoundException, "
-                + "GlobalExceptionHandler không map nên ra 500; CHECKLIST mục 5 yêu cầu 404 (ResourceNotFoundException)")
         @DisplayName("user trong token không còn tồn tại -> ResourceNotFoundException (404)")
         void unknownUserIsNotFound() {
             // given

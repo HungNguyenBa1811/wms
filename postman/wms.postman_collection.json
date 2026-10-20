@@ -1162,7 +1162,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                  "pm.test('no data field when the error has none', () => pm.expect(pm.response.json()).to.not.have.property('data'));"
                 ]
               }
             }
@@ -2393,7 +2394,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 409', () => pm.response.to.have.status(409));"
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('message + data carry the current status', () => {",
+                  "  pm.expect(body.message).to.eql('Cannot receive: purchase order is not PENDING');",
+                  "  pm.expect(body.data.status).to.eql('RECEIVED');",
+                  "  pm.expect(body.data.purchaseOrderId).to.eql(pm.collectionVariables.get('purchaseOrderId'));",
+                  "});"
                 ]
               }
             }
@@ -2401,6 +2408,41 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/receive"
+          }
+        },
+        {
+          "name": "Add item to RECEIVED purchase order -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('ErrorResponse with data', () => {",
+                  "  pm.expect(body.status).to.eql(409);",
+                  "  pm.expect(body.error).to.eql('Conflict');",
+                  "  pm.expect(body.message).to.eql('Cannot add item: purchase order is not PENDING');",
+                  "  pm.expect(body.data).to.eql({ purchaseOrderId: pm.collectionVariables.get('purchaseOrderId'), status: 'RECEIVED' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase-orders/{{purchaseOrderId}}/items",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\n  \"quantity\": 1,\n  \"unitCost\": 1.00\n}"
+            }
           }
         },
         {

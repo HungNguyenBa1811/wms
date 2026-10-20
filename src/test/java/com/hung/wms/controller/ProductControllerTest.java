@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -88,7 +89,22 @@ class ProductControllerTest extends ControllerSliceTestSupport {
         // when / then
         mockMvc.perform(get("/api/products/missing"))
                 .andExpect(errorResponse(404, "Not Found", "Product not found with id: missing", "/api/products/missing"))
-                .andExpect(jsonPath("$.detail").isEmpty());
+                .andExpect(jsonPath("$.detail").isEmpty())
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    @DisplayName("AccessDeniedException ném trong controller / service (vd @PreAuthorize) -> 403 ErrorResponse, không phải 500")
+    void accessDeniedInsideControllerIs403() throws Exception {
+        // given
+        when(productService.findProductById("secret"))
+                .thenThrow(new AuthorizationDeniedException("Access Denied"));
+
+        // when / then
+        mockMvc.perform(get("/api/products/secret"))
+                .andExpect(errorResponse(403, "Forbidden", "You do not have permission to access this resource",
+                        "/api/products/secret"));
     }
 
     @Test

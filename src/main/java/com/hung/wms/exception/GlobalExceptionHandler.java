@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -27,46 +28,23 @@ import java.util.List;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Object> handleResourceNotFoundException(
-            ResourceNotFoundException ex,
-            WebRequest request
-    ) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    // All business errors (ResourceNotFoundException 404, BadRequestException 400, InvalidStateException /
+    // ResourceDuplicateException / ResourceInUseException 409, or AppException itself): status and data come
+    // from the exception, so a new error case does not need a new handler
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<Object> handleAppException(AppException ex, WebRequest request) {
+        ErrorResponse errorResponse = buildErrorResponse(ex.getStatus(), ex.getMessage(), new ArrayList<>(), request);
+        errorResponse.setData(ex.getData());
+        return new ResponseEntity<>(errorResponse, ex.getStatus());
     }
 
-    @ExceptionHandler(ResourceDuplicateException.class)
-    public ResponseEntity<Object> handleResourceDuplicateException(
-            ResourceDuplicateException ex,
-            WebRequest request
-    ) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    // Denied inside the controller / service (e.g. a future @PreAuthorize throws AuthorizationDeniedException):
+    // without this it would fall into Exception.class -> 500. Denials by the URL rules never reach here,
+    // SecurityErrorHandler answers them in the filter chain with the same message
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex, WebRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to access this resource", request);
     }
-
-    @ExceptionHandler(ResourceInUseException.class)
-    public ResponseEntity<Object> handleResourceInUseException(
-            ResourceInUseException ex,
-            WebRequest request
-    ) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(InvalidStateException.class)
-    public ResponseEntity<Object> handleInvalidStateException(
-            InvalidStateException ex,
-            WebRequest request
-    ) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<Object> handleBadRequestException(
-            BadRequestException ex,
-            WebRequest request
-    ) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
-    }
-
 
     @ExceptionHandler(PropertyReferenceException.class)
     public ResponseEntity<Object> handlePropertyReferenceException(
