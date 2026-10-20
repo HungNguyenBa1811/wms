@@ -98,6 +98,11 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase order not found with id: " + id));
         if (purchaseOrder.getStatus() != PurchaseOrderStatus.PENDING)
             throw new InvalidStateException("Cannot add item: purchase order is not PENDING", statusData(purchaseOrder));
+        // Business check (needs the items already saved in the PO). A duplicate inside one create request is
+        // pure input and is rejected earlier by @UniqueProductIds on PurchaseOrderRequest
+        if (purchaseOrder.getPurchaseOrderItems().stream()
+                .anyMatch(item -> item.getProduct().getId().equals(request.getProductId())))
+            throw new BadRequestException("Product already exists in this purchase order");
         addItem(purchaseOrder, request,
                 () -> productRepository.findByIdAndIsDeletedFalseForUpdate(request.getProductId()));
         return purchaseOrderMapper.toResponse(purchaseOrderRepository.save(purchaseOrder));
@@ -152,13 +157,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return purchaseOrderMapper.toResponse(purchaseOrder);
     }
 
-    // productLookup is only called after the duplicate check, so a duplicate still fails with 400 before any 404
+    // productLookup runs after the callers' duplicate check, so in add item a duplicate fails with 400 before
+    // the product row is locked / looked up (404)
     private void addItem(PurchaseOrderEntity purchaseOrder, PurchaseOrderItemRequest request,
                          Supplier<Optional<ProductEntity>> productLookup) {
-        if (purchaseOrder.getPurchaseOrderItems().stream()
-                .anyMatch(item -> item.getProduct().getId().equals(request.getProductId())))
-            throw new BadRequestException("Product already exists in this purchase order");
-
         PurchaseOrderItemEntity item = purchaseOrderMapper.toItemEntity(request);
         ProductEntity product = productLookup.get()
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));

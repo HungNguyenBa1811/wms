@@ -201,24 +201,8 @@ class PurchaseOrderServiceImplTest {
             verify(purchaseOrderRepository, never()).save(any());
         }
 
-        @Test
-        @DisplayName("trùng product ngay trong request -> BadRequestException (400)")
-        void duplicateProductInRequest() {
-            // given
-            when(supplierRepository.findByIdAndIsDeletedFalse(SUPPLIER_ID)).thenReturn(Optional.of(supplier()));
-            when(warehouseRepository.findByIdAndIsDeletedFalse(WAREHOUSE_ID)).thenReturn(Optional.of(warehouse()));
-            when(productRepository.findAllByIdInAndIsDeletedFalseForUpdate(Set.of(PRODUCT_A)))
-                    .thenReturn(List.of(product(PRODUCT_A)));
-            PurchaseOrderRequest request = poRequest(itemRequest(PRODUCT_A, 1, "1.00"), itemRequest(PRODUCT_A, 2, "1.00"));
-
-            // when / then
-            assertThatThrownBy(() -> purchaseOrderService.createPurchaseOrder(request))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessage("Product already exists in this purchase order");
-            verify(productRepository, times(1)).findAllByIdInAndIsDeletedFalseForUpdate(Set.of(PRODUCT_A));
-            verify(productRepository, never()).findByIdAndIsDeletedFalseForUpdate(anyString());
-            verify(purchaseOrderRepository, never()).save(any());
-        }
+        // Duplicate product inside one create request: pure input, checked by @UniqueProductIds in the controller
+        // (UniqueProductIdsValidatorTest, PurchaseOrderControllerTest), no longer by the service
     }
 
     @Nested

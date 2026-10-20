@@ -108,15 +108,20 @@ class PurchaseOrderControllerTest extends ControllerSliceTestSupport {
     }
 
     @Test
-    @DisplayName("POST /api/purchase-orders trùng product trong request -> 400")
+    @DisplayName("POST /api/purchase-orders trùng product trong request -> 400 Validation failed, detail chỉ ra items, không gọi service")
     void createWithDuplicateProduct() throws Exception {
         // given
-        when(purchaseOrderService.createPurchaseOrder(any(PurchaseOrderRequest.class)))
-                .thenThrow(new BadRequestException("Product already exists in this purchase order"));
+        String body = """
+                {"supplierId": "supplier-1", "warehouseId": "warehouse-1",
+                 "items": [{"productId": "product-1", "quantity": 5, "unitCost": 10.00},
+                           {"productId": "product-1", "quantity": 2, "unitCost": 10.00}]}
+                """;
 
         // when / then
-        mockMvc.perform(post("/api/purchase-orders").contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
-                .andExpect(errorResponse(400, "Bad Request", "Product already exists in this purchase order", "/api/purchase-orders"));
+        mockMvc.perform(post("/api/purchase-orders").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(errorResponse(400, "Bad Request", "Validation failed", "/api/purchase-orders"))
+                .andExpect(jsonPath("$.detail[0]").value("items: Each product can appear only once in a purchase order"));
+        verifyNoInteractions(purchaseOrderService);
     }
 
     @Test

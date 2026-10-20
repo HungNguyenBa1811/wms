@@ -2309,6 +2309,39 @@
           }
         },
         {
+          "name": "Create purchase order - same product twice -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('rejected by Bean Validation with a field detail', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.message).to.eql('Validation failed');",
+                  "  pm.expect(body.detail).to.include('items: Each product can appear only once in a purchase order');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/purchase-orders",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierId\": \"{{supplierId}}\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"items\": [\n    { \"productId\": \"{{seededProductId}}\", \"quantity\": 1, \"unitCost\": 1.00 },\n    { \"productId\": \"{{seededProductId}}\", \"quantity\": 2, \"unitCost\": 1.00 }\n  ]\n}"
+            }
+          }
+        },
+        {
           "name": "Add item",
           "event": [
             {

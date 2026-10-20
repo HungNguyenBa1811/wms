@@ -345,6 +345,8 @@ PENDING
 - PO đã `RECEIVED` không thể thêm item hay receive lại (409).
 - PO phải có ít nhất một item mới được receive (400).
 - `quantity` phải lớn hơn 0, `unitCost` không được âm (400).
+- Mỗi product chỉ có 1 item trong PO (400): trùng ngay trong request tạo PO bị chặn ở controller bằng constraint `@UniqueProductIds` (`detail`: `items: Each product can appear only once in a purchase order`); thêm item trùng với item đã lưu trong PO thì service kiểm tra (cần dữ liệu DB), message `Product already exists in this purchase order`.
+- Nguyên tắc: controller (Bean Validation) kiểm tra input thuần, service chỉ kiểm tra nghiệp vụ cần dữ liệu DB (404, 409, trạng thái PO, trùng với dữ liệu đã lưu).
 - Mọi ID từ client (`supplierId`, `warehouseId`, `productId`) đều được tra lại trong DB, không tồn tại thì trả về 404.
 - `receivedBy` không nhận từ client: lấy theo username trong token của người gọi receive.
 
@@ -422,7 +424,7 @@ src/main/java/com/hung/wms
 |   `-- response   Response DTO
 |-- mapper         Chuyển đổi Entity <-> DTO (ModelMapper)
 |-- exception      Custom exception + GlobalExceptionHandler
-|-- validation     Validation group OnCreate, constraint MaxBytes
+|-- validation     Validation group OnCreate, constraint MaxBytes, UniqueProductIds
 |-- enums          PurchaseOrderStatus, MovementType, Role
 `-- config         ModelMapper, Spring Security + JwtAuthenticationFilter, OpenAPI, JPA Auditing
 ```

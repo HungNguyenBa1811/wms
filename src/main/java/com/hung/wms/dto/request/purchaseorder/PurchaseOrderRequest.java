@@ -1,5 +1,6 @@
 package com.hung.wms.dto.request.purchaseorder;
 
+import com.hung.wms.validation.UniqueProductIds;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -20,5 +21,6 @@ public class PurchaseOrderRequest {
     private String warehouseId;
 
     @NotEmpty(message = "Purchase order must have at least one item")
+    @UniqueProductIds
     private List<@NotNull(message = "Item must not be null") @Valid PurchaseOrderItemRequest> items = new ArrayList<>();
 }
