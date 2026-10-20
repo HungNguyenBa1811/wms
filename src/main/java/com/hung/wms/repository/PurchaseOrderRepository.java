@@ -2,19 +2,17 @@ package com.hung.wms.repository;
 
 import com.hung.wms.enums.PurchaseOrderStatus;
 import com.hung.wms.entity.PurchaseOrderEntity;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.*;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrderEntity, String>, JpaSpecificationExecutor<PurchaseOrderEntity> {
+public interface PurchaseOrderRepository extends BaseRepository<PurchaseOrderEntity, String> {
     @Override
     @EntityGraph(attributePaths = {"purchaseOrderItems", "receivedBy"})
     Page<PurchaseOrderEntity> findAll(Specification<PurchaseOrderEntity> spec, Pageable pageable);
@@ -26,8 +24,4 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrderEnti
     boolean existsBySupplier_IdAndStatus(String supplierId, PurchaseOrderStatus status);
     boolean existsByWarehouse_IdAndStatus(String warehouseId, PurchaseOrderStatus status);
     boolean existsByPurchaseOrderItems_Product_IdAndStatus(String productId, PurchaseOrderStatus status);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM PurchaseOrderEntity p WHERE p.id = :id")
-    Optional<PurchaseOrderEntity> findByIdForUpdate(@Param("id") String id);
 }

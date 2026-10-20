@@ -405,10 +405,12 @@ src/main/java/com/hung/wms
 |-- controller     Controller (REST endpoint)
 |-- service        Interface service
 |   `-- impl       Business logic
-|-- repository     Spring Data JPA repository
+|-- repository     Spring Data JPA repository (BaseRepository: CRUD + Specification + lock theo id;
+|   |              SoftDeleteRepository: thêm findByIdAndIsDeletedFalse[ForUpdate] cho 4 dữ liệu nền)
 |   |-- custom     Fragment viết tay (upsert inventory bằng native SQL)
-|   `-- specification  Specification cho filter danh sách
-|-- entity         JPA entity
+|   `-- specification  SpecificationUtils (contains / startsWith / equal / range / lessThan / notDeleted)
+|                  + mỗi entity 1 XxxSpecification.search(request)
+|-- entity         JPA entity, BaseEntity (id + audit) / SoftDeleteEntity (isDeleted)
 |-- dto
 |   |-- request    Request DTO
 |   `-- response   Response DTO
@@ -416,7 +418,7 @@ src/main/java/com/hung/wms
 |-- exception      Custom exception + GlobalExceptionHandler
 |-- validation     Validation group OnCreate, constraint MaxBytes
 |-- enums          PurchaseOrderStatus, MovementType, Role
-`-- config         ModelMapper, Spring Security + JwtAuthenticationFilter, OpenAPI
+`-- config         ModelMapper, Spring Security + JwtAuthenticationFilter, OpenAPI, JPA Auditing
 ```
 
 Luồng xử lý: `Controller -> Service -> Repository -> Entity`. Business rule nằm ở Service, Controller chỉ nhận request và trả response.

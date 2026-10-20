@@ -2,16 +2,13 @@ package com.hung.wms.repository;
 
 import com.hung.wms.repository.custom.InventoryRepositoryCustom;
 import com.hung.wms.entity.InventoryEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface InventoryRepository extends JpaRepository<InventoryEntity, String>,
-                                             JpaSpecificationExecutor<InventoryEntity>,
+public interface InventoryRepository extends BaseRepository<InventoryEntity, String>,
                                              InventoryRepositoryCustom {
     List<InventoryEntity> findAll();
     Optional<InventoryEntity> findById(String id);
