@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.hung</groupId>
+    <artifactId>wms-services</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>wms-services</name>
+    <description>Service scaffolding for CHECKLIST 7.6; the existing monolith remains at the repository root.</description>
+
+    <!-- From the repository root: .\mvnw.cmd -f services/pom.xml verify -->
+    <modules>
+        <module>auth-service</module>
+        <module>catalog-service</module>
+        <module>inventory-service</module>
+        <module>purchase-order-service</module>
+        <module>api-gateway</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <modelmapper.version>3.1.1</modelmapper.version>
+        <lombok.version>1.18.46</lombok.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <springdoc.version>3.1.1</springdoc.version>
+        <!-- Spring Cloud 2025.1.2 supports Spring Boot 4.1.x. Used only by api-gateway. -->
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
+    </properties>
+
+    <!-- Manage versions here; each service declares only its own dependencies. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.modelmapper</groupId>
+                <artifactId>modelmapper</artifactId>
+                <version>${modelmapper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- No source migration or runtime configuration yet.
+         Enable spring-boot-maven-plugin in each service when it has an application main class.
+         Until then, Maven can validate/compile/package the empty scaffolding as ordinary JARs. -->
+</project>
